@@ -1,0 +1,149 @@
+---
+title: "SNC Update - 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Import packages
+
+```{r}
+library(tidyverse)
+library(openxlsx)
+library(foreign)
+library(data.table)
+# library(rgdal)
+library(sp)
+# library(dplyr)
+# library(spdplyr)
+library(sf)
+library(viridis)
+library(leaflet)
+library(mapview)
+library(leafpop)
+```
+
+```{r}
+# Below is code for pulling the % new builds from Matt's 5-year ACS data file with all variables - CommDev/Research/Research/Census/ACS/Excel (zipped 'all' file)
+
+# housing_data <- fread('Data/acs20175_all.csv')
+# 
+# # Built environment variable
+# 
+# housing_snc <- housing_data %>%
+#   select(B25034e1, B25034e2, B25034e3, B25034e4, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
+#   mutate(hu_tot_17 = B25034e1, # Total housing units in existence in 2017
+#             hu_00_17 = B25034e2 + B25034e3 + B25034e4) %>% # Units built 2000-2009, units built 2010-2013, units built 2014 or later
+#   filter(SUMLEV == 140 & TCFLAG == 1) %>% # Summary level of geography = tract & contained within Twin Cities
+#   mutate(perc_new_bld = hu_00_17/hu_tot_17*100) %>%
+#   select(GEOID, GEOID2, GEONAME, perc_new_bld)
+
+# fwrite(housing_snc, 'Data/acs20175_new_builds.csv')
+
+```
+
+# Import data
+
+```{r}
+acs_17 <- read.xlsx('Data/acs20175_tr.xlsx')
+snc_tracts <- read.xlsx('Data/SNC tracts.xlsx')
+housing_snc <- fread('acs20175_new_builds.csv')
+
+snc_tracts_tidy <- snc_tracts %>%
+  mutate(GEOID = as.character(GEOID))
+# Remove extraneous variables
+snc_vars_17 <- acs_17 %>%
+  transmute(tract = GEOG_UNIT,
+            pop_total = POPTOTAL,
+            age65up = AGE65UP,
+            white_nh = WHITENH,
+            median_hhi = MEDIANHHI,
+            hu_total = HUTOTAL,
+            owner_occ = OWNEROCC,
+            rent_occ = RENTEROCC,
+            vacant = VACANT,
+            med_rent = MEDGRENT) %>%
+  mutate(perc_poc = (pop_total - white_nh)/pop_total*100,
+         perc_65up = age65up/pop_total*100) %>%
+  select(-pop_total, -white_nh, -age65up)
+
+snc_17 <- inner_join(snc_vars_17, snc_tracts_tidy, by = c('tract' = 'GEOID')) # Select SNC tracts
+snc_17_full <- left_join(snc_17, housing_snc, by = c('tract' = 'GEOID2'))
+
+# Attach to polygon structure
+metro_tr <- st_read(dsn = 'Data', layer = 'Census2010TigerTract', quiet = T)
+metro_tr_data <- left_join(metro_tr, snc_17_full, by = c('GEOID10' = 'tract'))
+
+# Filter out irrelevant tracts
+snc_tracts_geo <- metro_tr_data %>%
+  filter(!is.na(perc_poc))
+
+# Revert to polygon
+snc_tracts_sp <- as(snc_tracts_geo, 'Spatial')
+
+# Use native plotting
+plot(snc_tracts_sp)
+plot(snc_tracts_geo)
+
+object.size(snc_tracts_sp) #3M bytes; leaflet will not handle well
+
+# Use interactive plotting
+mapview(snc_tracts_geo,
+        zcol = 'perc_poc',
+        legend = T,
+        alpha.regions = 0.5)
+
+```
+
+
+
+```{r}
+library(plotly)
+library(extrafont)
+#font_import()
+loadfonts(device = 'win')
+
+snc_17_long <- snc_17_full %>%
+  gather(perc_poc, perc_new_bld, perc_65up, median_hhi, hu_total, med_rent, owner_occ, rent_occ, vacant, key = 'Variable_category', value = 'Variable_n')
+
+# Generate plotly plots of log-transformed variables
+plotly_gen <- function(filter_var) {
+
+  filter_var <- as.character(filter_var)
+  
+  plot_subject <- ifelse(filter_var == 'perc_poc', '% POC',
+                         ifelse(filter_var  == 'perc_new_bld', '% NEW BUILDS',
+                                ifelse(filter_var  == 'perc_65up', '% 65+',
+                                       ifelse(filter_var  == 'median_hhi', 'MEDIAN HHI', 'OTHER VARIABLE'))))
+
+  plot <- snc_17_long %>%
+  filter(Variable_category == filter_var) %>%
+  ggplot(aes(log(Variable_n))) +
+  geom_density(alpha = 0.5, fill = '#006666', color = '#006666') +
+  labs(title = paste('DISTRIBUTION OF ', plot_subject, ' ACROSS METRO TRACTS'),
+       x = plot_subject) +
+  theme_minimal() +
+  theme(text = element_text(family = "Tw Cen MT", hjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 20),
+      panel.grid = element_blank(),
+      panel.background = element_rect(fill = 'white', color = 'white'))
+
+ggplotly(plot)
+  
+}
+
+vars <- list('perc_poc', 'perc_new_bld', 'perc_65up', 'median_hhi')
+
+purrr::map(vars, plotly_gen)
+
+```
+
+```{r}
+
+
+
+```
+
