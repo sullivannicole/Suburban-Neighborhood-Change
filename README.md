@@ -10,10 +10,11 @@ The Met Council is the [Minneapolis-St. Paul metropolitan planning organization 
 
 ## Reproducing the Project
 
-All libraries needed are imported in the import code chunk.  Note that it's possible to reproduce creation of the ACS 'percent new builds' variable from full ACS data using the commented out code chunk.
+All libraries needed are imported in the import code chunk.  Note that it's possible to reproduce creation of the Census Bureau's American Community Survey (ACS) 'percent new builds' variable from full ACS data using the commented out code chunk.  The full ACS dataset exceeds GitHub's storage limit and is therefore not available here.
 
 ## Authors
 * Dennis Farmer - **Initial work**
+* Paul Hanson - **Initial work - GIS**
 * Nicole Sullivan - **Contributor**
 * Elizabeth Roten - **Contributor**
 

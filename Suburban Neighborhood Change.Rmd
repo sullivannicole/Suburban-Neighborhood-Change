@@ -50,10 +50,10 @@ library(leafpop)
 ```{r}
 acs_17 <- read.xlsx('Data/acs20175_tr.xlsx')
 snc_tracts <- read.xlsx('Data/SNC tracts.xlsx')
-housing_snc <- fread('acs20175_new_builds.csv')
+housing_snc <- fread('Data/acs20175_new_builds.csv')
 
 snc_tracts_tidy <- snc_tracts %>%
-  mutate(GEOID = as.character(GEOID))
+  mutate(GEOID = as.character(GEOID)) 
 # Remove extraneous variables
 snc_vars_17 <- acs_17 %>%
   transmute(tract = GEOG_UNIT,
@@ -88,9 +88,9 @@ snc_tracts_sp <- as(snc_tracts_geo, 'Spatial')
 plot(snc_tracts_sp)
 plot(snc_tracts_geo)
 
-object.size(snc_tracts_sp) #3M bytes; leaflet will not handle well
+object.size(snc_tracts_sp)
 
-# Use interactive plotting
+# Create a quick interactive plot
 mapview(snc_tracts_geo,
         zcol = 'perc_poc',
         legend = T,
@@ -138,12 +138,6 @@ ggplotly(plot)
 vars <- list('perc_poc', 'perc_new_bld', 'perc_65up', 'median_hhi')
 
 purrr::map(vars, plotly_gen)
-
-```
-
-```{r}
-
-
 
 ```
 
