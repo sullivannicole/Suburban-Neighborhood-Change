@@ -1,0 +1,2694 @@
+<?xml version='1.0' encoding='utf-8' ?>
+
+<!-- build 20192.19.0515.1630                               -->
+<workbook original-version='18.1' source-build='2019.2.0 (20192.19.0515.1630)' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-format-change-manifest>
+    <AutoCreateAndUpdateDSDPhoneLayouts ignorable='true' predowngraded='true' />
+    <MapboxVectorStylesAndLayers />
+    <SheetIdentifierTracking ignorable='true' predowngraded='true' />
+    <SortTagCleanup />
+    <SpatialFileLayer />
+    <WindowsPersistSimpleIdentifiers />
+  </document-format-change-manifest>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  <datasources>
+    <datasource caption='Census2010TigerTract.shp+ (Multiple Connections)' inline='true' name='federated.0037ml11wyiqf31fviptn18eudu9' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Census2010TigerTract' name='ogrdirect.0bdxsj508cexdb1e3md0o1fzntz2'>
+            <connection class='ogrdirect' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Data' filename='Census2010TigerTract.shp' ogr-grid-shift-folder='C:\Program Files\Tableau\Tableau 2019.2\local\proj4' password='' server='' tablename='' />
+          </named-connection>
+          <named-connection caption='Percent-difference 3-Cluster Solution Clusters' name='textscan.032xixx0lwc8i911vfbx31rylk75'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Percent-difference 3-Cluster Solution Clusters.csv' password='' server='' />
+          </named-connection>
+          <named-connection caption='Percent-Difference 2-Cluster Solutions Clusters' name='textscan.1yzm10p1ccl0ek1apwira0kcueny'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Percent-Difference 2-Cluster Solutions Clusters.csv' password='' server='' />
+          </named-connection>
+          <named-connection caption='Percent-Difference 7-Cluster Solution Clusters' name='textscan.0axazkn0gdktnq18sffj0007gw0e'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Percent-Difference 7-Cluster Solution Clusters.csv' password='' server='' />
+          </named-connection>
+        </named-connections>
+        <relation join='inner' type='join'>
+          <clause type='join'>
+            <expression op='='>
+              <expression op='[Census2010TigerTract.shp].[GEOID10]' />
+              <expression op='STR([Percent-Difference 7-Cluster Solution Clusters.csv].[TRACT])' />
+            </expression>
+          </clause>
+          <relation join='inner' type='join'>
+            <clause type='join'>
+              <expression op='='>
+                <expression op='[Census2010TigerTract.shp].[GEOID10]' />
+                <expression op='STR([Percent-Difference 2-Cluster Solutions Clusters.csv].[TRACT])' />
+              </expression>
+            </clause>
+            <relation join='inner' type='join'>
+              <clause type='join'>
+                <expression op='='>
+                  <expression op='[Census2010TigerTract.shp].[GEOID10]' />
+                  <expression op='STR([Percent-difference 3-Cluster Solution Clusters.csv].[TRACT])' />
+                </expression>
+              </clause>
+              <relation connection='ogrdirect.0bdxsj508cexdb1e3md0o1fzntz2' name='Census2010TigerTract.shp' table='[Census2010TigerTract.shp]' type='table'>
+                <columns>
+                  <column datatype='string' name='STATEFP10' ordinal='0' />
+                  <column datatype='string' name='COUNTYFP10' ordinal='1' />
+                  <column datatype='string' name='TRACTCE10' ordinal='2' />
+                  <column datatype='string' name='GEOID10' ordinal='3' />
+                  <column datatype='string' name='NAME10' ordinal='4' />
+                  <column datatype='string' name='NAMELSAD10' ordinal='5' />
+                  <column datatype='string' name='MTFCC10' ordinal='6' />
+                  <column datatype='string' name='FUNCSTAT10' ordinal='7' />
+                  <column datatype='real' name='ALAND10' ordinal='8' />
+                  <column datatype='real' name='AWATER10' ordinal='9' />
+                  <column datatype='string' name='INTPTLAT10' ordinal='10' />
+                  <column datatype='string' name='INTPTLON10' ordinal='11' />
+                  <column datatype='real' name='Shape_Leng' ordinal='12' />
+                  <column datatype='real' name='Shape_Area' ordinal='13' />
+                  <column datatype='spatial' name='Geometry' ordinal='14' />
+                </columns>
+              </relation>
+              <relation connection='textscan.032xixx0lwc8i911vfbx31rylk75' name='Percent-difference 3-Cluster Solution Clusters.csv' table='[Percent-difference 3-Cluster Solution Clusters#csv]' type='table'>
+                <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+                  <column datatype='real' name='TRACT' ordinal='0' />
+                  <column datatype='integer' name='cluster' ordinal='1' />
+                  <column datatype='string' name='cluster_type' ordinal='2' />
+                </columns>
+              </relation>
+            </relation>
+            <relation connection='textscan.1yzm10p1ccl0ek1apwira0kcueny' name='Percent-Difference 2-Cluster Solutions Clusters.csv' table='[Percent-Difference 2-Cluster Solutions Clusters#csv]' type='table'>
+              <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+                <column datatype='real' name='TRACT' ordinal='0' />
+                <column datatype='integer' name='cluster' ordinal='1' />
+                <column datatype='string' name='cluster_type' ordinal='2' />
+              </columns>
+            </relation>
+          </relation>
+          <relation connection='textscan.0axazkn0gdktnq18sffj0007gw0e' name='Percent-Difference 7-Cluster Solution Clusters.csv' table='[Percent-Difference 7-Cluster Solution Clusters#csv]' type='table'>
+            <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+              <column datatype='real' name='TRACT' ordinal='0' />
+              <column datatype='integer' name='cluster' ordinal='1' />
+              <column datatype='string' name='cluster_type' ordinal='2' />
+            </columns>
+          </relation>
+        </relation>
+        <cols>
+          <map key='[ALAND10]' value='[Census2010TigerTract.shp].[ALAND10]' />
+          <map key='[AWATER10]' value='[Census2010TigerTract.shp].[AWATER10]' />
+          <map key='[COUNTYFP10]' value='[Census2010TigerTract.shp].[COUNTYFP10]' />
+          <map key='[FUNCSTAT10]' value='[Census2010TigerTract.shp].[FUNCSTAT10]' />
+          <map key='[GEOID10]' value='[Census2010TigerTract.shp].[GEOID10]' />
+          <map key='[Geometry]' value='[Census2010TigerTract.shp].[Geometry]' />
+          <map key='[INTPTLAT10]' value='[Census2010TigerTract.shp].[INTPTLAT10]' />
+          <map key='[INTPTLON10]' value='[Census2010TigerTract.shp].[INTPTLON10]' />
+          <map key='[MTFCC10]' value='[Census2010TigerTract.shp].[MTFCC10]' />
+          <map key='[NAME10]' value='[Census2010TigerTract.shp].[NAME10]' />
+          <map key='[NAMELSAD10]' value='[Census2010TigerTract.shp].[NAMELSAD10]' />
+          <map key='[STATEFP10]' value='[Census2010TigerTract.shp].[STATEFP10]' />
+          <map key='[Shape_Area]' value='[Census2010TigerTract.shp].[Shape_Area]' />
+          <map key='[Shape_Leng]' value='[Census2010TigerTract.shp].[Shape_Leng]' />
+          <map key='[TRACT (Percent-Difference 2-Cluster Solutions Clusters.csv)]' value='[Percent-Difference 2-Cluster Solutions Clusters.csv].[TRACT]' />
+          <map key='[TRACT (Percent-Difference 7-Cluster Solution Clusters.csv)]' value='[Percent-Difference 7-Cluster Solution Clusters.csv].[TRACT]' />
+          <map key='[TRACTCE10]' value='[Census2010TigerTract.shp].[TRACTCE10]' />
+          <map key='[TRACT]' value='[Percent-difference 3-Cluster Solution Clusters.csv].[TRACT]' />
+          <map key='[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]' value='[Percent-Difference 2-Cluster Solutions Clusters.csv].[cluster]' />
+          <map key='[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]' value='[Percent-Difference 7-Cluster Solution Clusters.csv].[cluster]' />
+          <map key='[cluster]' value='[Percent-difference 3-Cluster Solution Clusters.csv].[cluster]' />
+          <map key='[cluster_type (Percent-Difference 2-Cluster Solutions Clusters.csv)]' value='[Percent-Difference 2-Cluster Solutions Clusters.csv].[cluster_type]' />
+          <map key='[cluster_type (Percent-Difference 7-Cluster Solution Clusters.csv)]' value='[Percent-Difference 7-Cluster Solution Clusters.csv].[cluster_type]' />
+          <map key='[cluster_type]' value='[Percent-difference 3-Cluster Solution Clusters.csv].[cluster_type]' />
+        </cols>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>STATEFP10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[STATEFP10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>STATEFP10</remote-alias>
+            <ordinal>0</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>COUNTYFP10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[COUNTYFP10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>COUNTYFP10</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRACTCE10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[TRACTCE10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>TRACTCE10</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>GEOID10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[GEOID10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>GEOID10</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NAME10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[NAME10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>NAME10</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NAMELSAD10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[NAMELSAD10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>NAMELSAD10</remote-alias>
+            <ordinal>5</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>MTFCC10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MTFCC10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>MTFCC10</remote-alias>
+            <ordinal>6</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>FUNCSTAT10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[FUNCSTAT10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>FUNCSTAT10</remote-alias>
+            <ordinal>7</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>ALAND10</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[ALAND10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>ALAND10</remote-alias>
+            <ordinal>8</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>AWATER10</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[AWATER10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>AWATER10</remote-alias>
+            <ordinal>9</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>INTPTLAT10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[INTPTLAT10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>INTPTLAT10</remote-alias>
+            <ordinal>10</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>INTPTLON10</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[INTPTLON10]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>INTPTLON10</remote-alias>
+            <ordinal>11</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='binary' />
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Shape_Leng</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Shape_Leng]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>Shape_Leng</remote-alias>
+            <ordinal>12</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Shape_Area</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Shape_Area]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>Shape_Area</remote-alias>
+            <ordinal>13</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Geometry</remote-name>
+            <remote-type>8</remote-type>
+            <local-name>[Geometry]</local-name>
+            <parent-name>[Census2010TigerTract.shp]</parent-name>
+            <remote-alias>Geometry</remote-alias>
+            <ordinal>14</ordinal>
+            <local-type>spatial</local-type>
+            <aggregation>Collect</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Percent-difference 3-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRACT</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[TRACT]</local-name>
+            <parent-name>[Percent-difference 3-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>TRACT</remote-alias>
+            <ordinal>15</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[cluster]</local-name>
+            <parent-name>[Percent-difference 3-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>cluster</remote-alias>
+            <ordinal>16</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster_type</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[cluster_type]</local-name>
+            <parent-name>[Percent-difference 3-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>cluster_type</remote-alias>
+            <ordinal>17</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>1</scale>
+            <width>1073741823</width>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='LEN_RUS' />
+          </metadata-record>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Percent-Difference 2-Cluster Solutions Clusters.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRACT</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[TRACT (Percent-Difference 2-Cluster Solutions Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 2-Cluster Solutions Clusters.csv]</parent-name>
+            <remote-alias>TRACT</remote-alias>
+            <ordinal>18</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 2-Cluster Solutions Clusters.csv]</parent-name>
+            <remote-alias>cluster</remote-alias>
+            <ordinal>19</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster_type</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[cluster_type (Percent-Difference 2-Cluster Solutions Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 2-Cluster Solutions Clusters.csv]</parent-name>
+            <remote-alias>cluster_type</remote-alias>
+            <ordinal>20</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>1</scale>
+            <width>1073741823</width>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='LEN_RUS' />
+          </metadata-record>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Percent-Difference 7-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRACT</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[TRACT (Percent-Difference 7-Cluster Solution Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 7-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>TRACT</remote-alias>
+            <ordinal>21</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 7-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>cluster</remote-alias>
+            <ordinal>22</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>cluster_type</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[cluster_type (Percent-Difference 7-Cluster Solution Clusters.csv)]</local-name>
+            <parent-name>[Percent-Difference 7-Cluster Solution Clusters.csv]</parent-name>
+            <remote-alias>cluster_type</remote-alias>
+            <ordinal>23</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>1</scale>
+            <width>1073741823</width>
+            <contains-null>true</contains-null>
+            <collation flag='0' name='LEN_RUS' />
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <aliases enabled='yes' />
+      <column caption='Aland10' datatype='real' name='[ALAND10]' role='measure' type='quantitative' />
+      <column caption='Awater10' datatype='real' name='[AWATER10]' role='measure' type='quantitative' />
+      <column caption='Countyfp10' datatype='string' name='[COUNTYFP10]' role='dimension' semantic-role='[County].[Name]' type='nominal' />
+      <column caption='Funcstat10' datatype='string' name='[FUNCSTAT10]' role='dimension' type='nominal' />
+      <column caption='Geoid10' datatype='string' name='[GEOID10]' role='dimension' type='nominal' />
+      <column caption='Intptlat10' datatype='string' name='[INTPTLAT10]' role='dimension' type='nominal' />
+      <column caption='Intptlon10' datatype='string' name='[INTPTLON10]' role='dimension' type='nominal' />
+      <column caption='Mtfcc10' datatype='string' name='[MTFCC10]' role='dimension' type='nominal' />
+      <column caption='Name10' datatype='string' name='[NAME10]' role='dimension' type='nominal' />
+      <column caption='Namelsad10' datatype='string' name='[NAMELSAD10]' role='dimension' type='nominal' />
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column caption='Statefp10' datatype='string' name='[STATEFP10]' role='dimension' type='nominal' />
+      <column caption='Shape Area' datatype='real' name='[Shape_Area]' role='measure' type='quantitative' />
+      <column caption='Shape Leng' datatype='real' name='[Shape_Leng]' role='measure' type='quantitative' />
+      <column caption='Tractce10' datatype='string' name='[TRACTCE10]' role='dimension' type='nominal' />
+      <column caption='Tract' datatype='real' name='[TRACT]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]' role='measure' type='quantitative' />
+      <column caption='Cluster' datatype='integer' name='[cluster]' role='measure' type='quantitative' />
+      <column caption='cluster type (Percent-Difference 2-Cluster Solutions Clusters.csv)' datatype='string' name='[cluster_type (Percent-Difference 2-Cluster Solutions Clusters.csv)]' role='dimension' type='nominal' />
+      <column caption='cluster type (Percent-Difference 7-Cluster Solution Clusters.csv)' datatype='string' name='[cluster_type (Percent-Difference 7-Cluster Solution Clusters.csv)]' role='dimension' type='nominal' />
+      <column caption='Cluster Type' datatype='string' name='[cluster_type]' role='dimension' type='nominal' />
+      <column-instance column='[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]' derivation='None' name='[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' pivot='key' type='ordinal' />
+      <column-instance column='[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]' derivation='None' name='[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' pivot='key' type='ordinal' />
+      <column-instance column='[cluster]' derivation='None' name='[none:cluster:ok]' pivot='key' type='ordinal' />
+      <layout dim-ordering='alphabetic' dim-percentage='0.485366' measure-ordering='alphabetic' measure-percentage='0.514634' show-structure='true' user-set-layout='true' />
+      <style>
+        <style-rule element='mark'>
+          <encoding attr='color' field='[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' type='palette'>
+            <map to='#f0bd27'>
+              <bucket>2</bucket>
+            </map>
+            <map to='#f36754'>
+              <bucket>1</bucket>
+            </map>
+          </encoding>
+          <encoding attr='color' field='[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' palette='green_gold_10_0' type='palette'>
+            <map to='#3ca8bc'>
+              <bucket>3</bucket>
+            </map>
+            <map to='#8fb202'>
+              <bucket>5</bucket>
+            </map>
+            <map to='#97cfd0'>
+              <bucket>4</bucket>
+            </map>
+            <map to='#b9ca5d'>
+              <bucket>6</bucket>
+            </map>
+            <map to='#f0bd27'>
+              <bucket>1</bucket>
+            </map>
+            <map to='#f7c480'>
+              <bucket>7</bucket>
+            </map>
+            <map to='#ff684c'>
+              <bucket>2</bucket>
+            </map>
+          </encoding>
+          <encoding attr='color' field='[none:cluster:ok]' type='palette'>
+            <map to='#00a2b3'>
+              <bucket>3</bucket>
+            </map>
+            <map to='#f0bd27'>
+              <bucket>2</bucket>
+            </map>
+            <map to='#f36754'>
+              <bucket>1</bucket>
+            </map>
+          </encoding>
+        </style-rule>
+      </style>
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+    </datasource>
+    <datasource caption='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution' inline='true' name='federated.0lqsdh01n3amzz10gxpeq0ace31p' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution' name='textscan.121ubx41i1e4c919waet01alrbei'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv' password='' server='' />
+          </named-connection>
+        </named-connections>
+        <relation connection='textscan.121ubx41i1e4c919waet01alrbei' name='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv' table='[Cluster Silhouettes - Percent-Difference, 2-Cluster Solution#csv]' type='table'>
+          <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+            <column datatype='integer' name='Medoid' ordinal='0' />
+            <column datatype='real' name='Cluster Average Width' ordinal='1' />
+            <column datatype='real' name='Average Width' ordinal='2' />
+          </columns>
+        </relation>
+        <metadata-records>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Medoid</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[Medoid]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv]</parent-name>
+            <remote-alias>Medoid</remote-alias>
+            <ordinal>0</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Cluster Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Cluster Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv]</parent-name>
+            <remote-alias>Cluster Average Width</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 2-Cluster Solution.csv]</parent-name>
+            <remote-alias>Average Width</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column-instance column='[Medoid]' derivation='None' name='[none:Medoid:ok]' pivot='key' type='ordinal' />
+      <layout dim-ordering='alphabetic' dim-percentage='0.4' measure-ordering='alphabetic' measure-percentage='0.6' show-structure='true' />
+      <style>
+        <style-rule element='mark'>
+          <encoding attr='color' field='[none:Medoid:ok]' type='palette'>
+            <map to='#f0bd27'>
+              <bucket>223</bucket>
+            </map>
+            <map to='#f36754'>
+              <bucket>350</bucket>
+            </map>
+          </encoding>
+        </style-rule>
+      </style>
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+    </datasource>
+    <datasource caption='Cluster Silhouettes - Percent Difference, 3-Cluster Solution' inline='true' name='federated.0q36qq5136rfck159dsmu0xw6qpj' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Cluster Silhouettes - Percent Difference, 3-Cluster Solution' name='textscan.0ufg0o11gjcolm15sfcw01pqu9fg'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv' password='' server='' />
+          </named-connection>
+        </named-connections>
+        <relation connection='textscan.0ufg0o11gjcolm15sfcw01pqu9fg' name='Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv' table='[Cluster Silhouettes - Percent Difference, 3-Cluster Solution#csv]' type='table'>
+          <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+            <column datatype='integer' name='Medoid' ordinal='0' />
+            <column datatype='real' name='Cluster Average Width' ordinal='1' />
+            <column datatype='real' name='Average Width' ordinal='2' />
+          </columns>
+        </relation>
+        <metadata-records>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Medoid</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[Medoid]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv]</parent-name>
+            <remote-alias>Medoid</remote-alias>
+            <ordinal>0</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Cluster Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Cluster Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv]</parent-name>
+            <remote-alias>Cluster Average Width</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent Difference, 3-Cluster Solution.csv]</parent-name>
+            <remote-alias>Average Width</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column-instance column='[Medoid]' derivation='Sum' name='[sum:Medoid:ok]' pivot='key' type='ordinal' />
+      <layout dim-ordering='alphabetic' dim-percentage='0.4' measure-ordering='alphabetic' measure-percentage='0.6' show-structure='true' />
+      <style>
+        <style-rule element='mark'>
+          <encoding attr='color' field='[sum:Medoid:ok]' type='palette'>
+            <map to='#00a2b3'>
+              <bucket>223</bucket>
+            </map>
+            <map to='#f0bd27'>
+              <bucket>350</bucket>
+            </map>
+            <map to='#f36754'>
+              <bucket>112</bucket>
+            </map>
+          </encoding>
+        </style-rule>
+      </style>
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+    </datasource>
+    <datasource caption='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution' inline='true' name='federated.0dhxknb072ajpm10jarw71uy35d8' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution' name='textscan.15rs89s1o604vl104cg3h13o16kn'>
+            <connection class='textscan' directory='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results' filename='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv' password='' server='' />
+          </named-connection>
+        </named-connections>
+        <relation connection='textscan.15rs89s1o604vl104cg3h13o16kn' name='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv' table='[Cluster Silhouettes - Percent-Difference, 7-Cluster Solution#csv]' type='table'>
+          <columns character-set='UTF-8' header='yes' locale='en_US' separator=','>
+            <column datatype='integer' name='Medoid' ordinal='0' />
+            <column datatype='real' name='Cluster Average Width' ordinal='1' />
+            <column datatype='real' name='Average Width' ordinal='2' />
+          </columns>
+        </relation>
+        <metadata-records>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Medoid</remote-name>
+            <remote-type>20</remote-type>
+            <local-name>[Medoid]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv]</parent-name>
+            <remote-alias>Medoid</remote-alias>
+            <ordinal>0</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Cluster Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Cluster Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv]</parent-name>
+            <remote-alias>Cluster Average Width</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Average Width</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[Average Width]</local-name>
+            <parent-name>[Cluster Silhouettes - Percent-Difference, 7-Cluster Solution.csv]</parent-name>
+            <remote-alias>Average Width</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column-instance column='[Medoid]' derivation='None' name='[none:Medoid:ok]' pivot='key' type='ordinal' />
+      <layout dim-ordering='alphabetic' dim-percentage='0.4' measure-ordering='alphabetic' measure-percentage='0.6' show-structure='true' />
+      <style>
+        <style-rule element='mark'>
+          <encoding attr='color' field='[none:Medoid:ok]' type='palette'>
+            <map to='#00a2b3'>
+              <bucket>87</bucket>
+            </map>
+            <map to='#8fb202'>
+              <bucket>122</bucket>
+            </map>
+            <map to='#97cfd0'>
+              <bucket>429</bucket>
+            </map>
+            <map to='#b9ca5d'>
+              <bucket>109</bucket>
+            </map>
+            <map to='#f0bd27'>
+              <bucket>392</bucket>
+            </map>
+            <map to='#f36754'>
+              <bucket>112</bucket>
+            </map>
+            <map to='#f7c480'>
+              <bucket>242</bucket>
+            </map>
+          </encoding>
+        </style-rule>
+      </style>
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+    </datasource>
+  </datasources>
+  <mapsources>
+    <mapsource name='Tableau' />
+  </mapsources>
+  <worksheets>
+    <worksheet name='2-Cl Av'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run bold='true' fontalignment='1' fontname='Tw Cen MT'>Average Width</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution' name='federated.0lqsdh01n3amzz10gxpeq0ace31p' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0lqsdh01n3amzz10gxpeq0ace31p'>
+            <column datatype='real' name='[Average Width]' role='measure' type='quantitative' />
+            <column-instance column='[Average Width]' derivation='None' name='[none:Average Width:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <text column='[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Average Width:qk]' />
+            </encodings>
+            <customized-tooltip>
+              <formatted-text />
+            </customized-tooltip>
+            <customized-label>
+              <formatted-text>
+                <run fontname='Tw Cen MT' fontsize='12'>&lt;</run>
+                <run fontname='Tw Cen MT' fontsize='12'>[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Average Width:qk]</run>
+                <run fontname='Tw Cen MT' fontsize='12'>&gt;</run>
+              </formatted-text>
+            </customized-label>
+            <style>
+              <style-rule element='cell'>
+                <format attr='text-align' value='center' />
+                <format attr='vertical-align' value='center' />
+              </style-rule>
+              <style-rule element='mark'>
+                <format attr='mark-labels-cull' value='true' />
+                <format attr='mark-labels-show' value='true' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+      <simple-id uuid='{4FB2B0CD-A24C-46C5-B453-EEBD48BFD073}' />
+    </worksheet>
+    <worksheet name='2-Cl Sil'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT'>Silhouette Width by Cluster</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent-Difference, 2-Cluster Solution' name='federated.0lqsdh01n3amzz10gxpeq0ace31p' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0lqsdh01n3amzz10gxpeq0ace31p'>
+            <column datatype='real' name='[Cluster Average Width]' role='measure' type='quantitative' />
+            <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+            <column-instance column='[Cluster Average Width]' derivation='Attribute' name='[attr:Cluster Average Width:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Medoid]' derivation='None' name='[none:Medoid:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <natural-sort column='[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Medoid:ok]' direction='DESC' />
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='worksheet'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='dropline'>
+            <format attr='stroke-size' value='0' />
+            <format attr='line-visibility' value='off' />
+          </style-rule>
+          <style-rule element='refline'>
+            <format attr='stroke-size' value='0' />
+            <format attr='line-visibility' value='off' />
+          </style-rule>
+          <style-rule element='gridline'>
+            <format attr='stroke-size' scope='rows' value='0' />
+            <format attr='line-visibility' scope='rows' value='off' />
+          </style-rule>
+          <style-rule element='zeroline'>
+            <format attr='stroke-size' value='1' />
+            <format attr='line-visibility' value='on' />
+            <format attr='line-pattern-only' value='dotted' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane id='2' selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <mark-sizing mark-sizing-setting='marks-scaling-off' />
+            <encodings>
+              <color column='[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Medoid:ok]' />
+            </encodings>
+            <customized-tooltip>
+              <formatted-text>
+                <run fontalignment='1' fontname='Tw Cen MT' fontsize='25'>Cluster Average Width:&#9;</run>
+                <run bold='true' fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;[federated.0lqsdh01n3amzz10gxpeq0ace31p].[attr:Cluster Average Width:qk]&gt;</run>
+              </formatted-text>
+            </customized-tooltip>
+            <style>
+              <style-rule element='mark'>
+                <format attr='size' value='0.21889503300189972' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0lqsdh01n3amzz10gxpeq0ace31p].[attr:Cluster Average Width:qk]</rows>
+        <cols>[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Medoid:ok]</cols>
+      </table>
+      <simple-id uuid='{DA882A88-FA46-49E2-8AE9-0F71911CD3ED}' />
+    </worksheet>
+    <worksheet name='2-Cluster Solution'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;Sheet Name&gt;</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Census2010TigerTract.shp+ (Multiple Connections)' name='federated.0037ml11wyiqf31fviptn18eudu9' />
+          </datasources>
+          <mapsources>
+            <mapsource name='Tableau' />
+          </mapsources>
+          <datasource-dependencies datasource='federated.0037ml11wyiqf31fviptn18eudu9'>
+            <column caption='Geoid10' datatype='string' name='[GEOID10]' role='dimension' type='nominal' />
+            <column datatype='spatial' name='[Geometry]' role='measure' type='nominal' />
+            <column-instance column='[Geometry]' derivation='Collect' name='[clct:Geometry:nk]' pivot='key' type='nominal' />
+            <column datatype='integer' name='[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]' role='measure' type='quantitative' />
+            <column-instance column='[GEOID10]' derivation='None' name='[none:GEOID10:nk]' pivot='key' type='nominal' />
+            <column-instance column='[cluster (Percent-Difference 2-Cluster Solutions Clusters.csv)]' derivation='None' name='[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='legend'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='legend-title'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='legend-title-text'>
+            <format attr='color' field='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' value='Cluster' />
+          </style-rule>
+          <style-rule element='map'>
+            <format attr='washout' value='0.0' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]' />
+              <geometry column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='has-stroke' value='true' />
+                <format attr='stroke-color' value='#b6992d' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0037ml11wyiqf31fviptn18eudu9].[Latitude (generated)]</rows>
+        <cols>[federated.0037ml11wyiqf31fviptn18eudu9].[Longitude (generated)]</cols>
+      </table>
+      <simple-id uuid='{E981266C-F1E2-4D19-A4B0-8B442CF00EEF}' />
+    </worksheet>
+    <worksheet name='3-Cl Av'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run bold='true' fontalignment='1' fontname='Tw Cen MT'>Average Width</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent Difference, 3-Cluster Solution' name='federated.0q36qq5136rfck159dsmu0xw6qpj' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0q36qq5136rfck159dsmu0xw6qpj'>
+            <column datatype='real' name='[Average Width]' role='measure' type='quantitative' />
+            <column-instance column='[Average Width]' derivation='None' name='[none:Average Width:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <text column='[federated.0q36qq5136rfck159dsmu0xw6qpj].[none:Average Width:qk]' />
+            </encodings>
+            <customized-tooltip>
+              <formatted-text />
+            </customized-tooltip>
+            <customized-label>
+              <formatted-text>
+                <run fontname='Tw Cen MT' fontsize='13'>&lt;</run>
+                <run fontname='Tw Cen MT' fontsize='13'>[federated.0q36qq5136rfck159dsmu0xw6qpj].[none:Average Width:qk]</run>
+                <run fontname='Tw Cen MT' fontsize='13'>&gt;</run>
+              </formatted-text>
+            </customized-label>
+            <style>
+              <style-rule element='cell'>
+                <format attr='text-align' value='center' />
+                <format attr='vertical-align' value='center' />
+              </style-rule>
+              <style-rule element='mark'>
+                <format attr='mark-labels-cull' value='true' />
+                <format attr='mark-labels-show' value='true' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+      <simple-id uuid='{EAC7C2AB-E2C7-4D16-A7CD-31DDAC5039AC}' />
+    </worksheet>
+    <worksheet name='3-Cl Sil'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT'>Silhouette Width by Cluster</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent Difference, 3-Cluster Solution' name='federated.0q36qq5136rfck159dsmu0xw6qpj' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0q36qq5136rfck159dsmu0xw6qpj'>
+            <column datatype='real' name='[Cluster Average Width]' role='measure' type='quantitative' />
+            <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+            <column-instance column='[Cluster Average Width]' derivation='Attribute' name='[attr:Cluster Average Width:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Medoid]' derivation='None' name='[none:Medoid:ok]' pivot='key' type='ordinal' />
+            <column-instance column='[Cluster Average Width]' derivation='Sum' name='[sum:Cluster Average Width:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Medoid]' derivation='Sum' name='[sum:Medoid:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <computed-sort column='[federated.0q36qq5136rfck159dsmu0xw6qpj].[none:Medoid:ok]' direction='DESC' using='[federated.0q36qq5136rfck159dsmu0xw6qpj].[sum:Cluster Average Width:qk]' />
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='worksheet'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='gridline'>
+            <format attr='stroke-size' scope='rows' value='0' />
+            <format attr='line-visibility' scope='rows' value='off' />
+            <format attr='stroke-size' scope='cols' value='0' />
+            <format attr='line-visibility' scope='cols' value='off' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <mark-sizing mark-sizing-setting='marks-scaling-off' />
+            <encodings>
+              <color column='[federated.0q36qq5136rfck159dsmu0xw6qpj].[sum:Medoid:ok]' />
+            </encodings>
+            <customized-tooltip>
+              <formatted-text>
+                <run fontalignment='1' fontname='Tw Cen MT' fontsize='25'>Cluster Average Width:&#9;</run>
+                <run bold='true' fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;[federated.0q36qq5136rfck159dsmu0xw6qpj].[attr:Cluster Average Width:qk]&gt;</run>
+              </formatted-text>
+            </customized-tooltip>
+            <style>
+              <style-rule element='mark'>
+                <format attr='size' value='0.17491713166236877' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0q36qq5136rfck159dsmu0xw6qpj].[attr:Cluster Average Width:qk]</rows>
+        <cols>[federated.0q36qq5136rfck159dsmu0xw6qpj].[none:Medoid:ok]</cols>
+      </table>
+      <simple-id uuid='{C833A877-D7D9-4C7F-B693-A718F3859454}' />
+    </worksheet>
+    <worksheet name='3-Cluster Solution'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;Sheet Name&gt;</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Census2010TigerTract.shp+ (Multiple Connections)' name='federated.0037ml11wyiqf31fviptn18eudu9' />
+          </datasources>
+          <mapsources>
+            <mapsource name='Tableau' />
+          </mapsources>
+          <datasource-dependencies datasource='federated.0037ml11wyiqf31fviptn18eudu9'>
+            <column caption='Geoid10' datatype='string' name='[GEOID10]' role='dimension' type='nominal' />
+            <column datatype='spatial' name='[Geometry]' role='measure' type='nominal' />
+            <column-instance column='[Geometry]' derivation='Collect' name='[clct:Geometry:nk]' pivot='key' type='nominal' />
+            <column caption='Cluster' datatype='integer' name='[cluster]' role='measure' type='quantitative' />
+            <column-instance column='[GEOID10]' derivation='None' name='[none:GEOID10:nk]' pivot='key' type='nominal' />
+            <column-instance column='[cluster]' derivation='None' name='[none:cluster:ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='legend'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='legend-title'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='map'>
+            <format attr='washout' value='0.0' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]' />
+              <geometry column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='has-stroke' value='true' />
+                <format attr='stroke-color' value='#b6992d' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0037ml11wyiqf31fviptn18eudu9].[Latitude (generated)]</rows>
+        <cols>[federated.0037ml11wyiqf31fviptn18eudu9].[Longitude (generated)]</cols>
+      </table>
+      <simple-id uuid='{BEBDF4DC-8BE1-44FE-BD04-887DB1390C12}' />
+    </worksheet>
+    <worksheet name='7-Cl Av'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run bold='true' fontalignment='1' fontname='Tw Cen MT'>Average Width</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution' name='federated.0dhxknb072ajpm10jarw71uy35d8' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0dhxknb072ajpm10jarw71uy35d8'>
+            <column datatype='real' name='[Average Width]' role='measure' type='quantitative' />
+            <column-instance column='[Average Width]' derivation='None' name='[none:Average Width:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <text column='[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Average Width:qk]' />
+            </encodings>
+            <customized-label>
+              <formatted-text>
+                <run fontname='Tw Cen MT' fontsize='13'>&lt;</run>
+                <run fontname='Tw Cen MT' fontsize='13'>[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Average Width:qk]</run>
+                <run fontname='Tw Cen MT' fontsize='13'>&gt;</run>
+              </formatted-text>
+            </customized-label>
+            <style>
+              <style-rule element='cell'>
+                <format attr='text-align' value='center' />
+                <format attr='vertical-align' value='center' />
+              </style-rule>
+              <style-rule element='mark'>
+                <format attr='mark-labels-show' value='true' />
+                <format attr='mark-labels-cull' value='true' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+      <simple-id uuid='{43FA95AF-CDD0-46F1-BAF8-3560938F59ED}' />
+    </worksheet>
+    <worksheet name='7-Cl Sil'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT'>Silhouette Width by Cluster</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Cluster Silhouettes - Percent-Difference, 7-Cluster Solution' name='federated.0dhxknb072ajpm10jarw71uy35d8' />
+          </datasources>
+          <datasource-dependencies datasource='federated.0dhxknb072ajpm10jarw71uy35d8'>
+            <column datatype='real' name='[Cluster Average Width]' role='measure' type='quantitative' />
+            <column datatype='integer' name='[Medoid]' role='measure' type='quantitative' />
+            <column-instance column='[Cluster Average Width]' derivation='None' name='[none:Cluster Average Width:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[Medoid]' derivation='None' name='[none:Medoid:ok]' pivot='key' type='ordinal' />
+            <column-instance column='[Cluster Average Width]' derivation='Sum' name='[sum:Cluster Average Width:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <computed-sort column='[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]' direction='DESC' using='[federated.0dhxknb072ajpm10jarw71uy35d8].[sum:Cluster Average Width:qk]' />
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='worksheet'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='gridline'>
+            <format attr='stroke-size' scope='rows' value='0' />
+            <format attr='line-visibility' scope='rows' value='off' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <mark-sizing mark-sizing-setting='marks-scaling-off' />
+            <encodings>
+              <color column='[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]' />
+            </encodings>
+            <customized-tooltip>
+              <formatted-text>
+                <run fontalignment='1' fontcolor='#787878' fontname='Tw Cen MT' fontsize='25'>Cluster Average Width:  </run>
+                <run bold='true' fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Cluster Average Width:qk]&gt;</run>
+              </formatted-text>
+            </customized-tooltip>
+            <style>
+              <style-rule element='mark'>
+                <format attr='size' value='0.36182320117950439' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Cluster Average Width:qk]</rows>
+        <cols>[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]</cols>
+      </table>
+      <simple-id uuid='{BB3515D4-9500-4833-B59B-20E99C25EE36}' />
+    </worksheet>
+    <worksheet name='7-Cluster Solution'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run fontalignment='1' fontname='Tw Cen MT' fontsize='25'>&lt;Sheet Name&gt;</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Census2010TigerTract.shp+ (Multiple Connections)' name='federated.0037ml11wyiqf31fviptn18eudu9' />
+          </datasources>
+          <mapsources>
+            <mapsource name='Tableau' />
+          </mapsources>
+          <datasource-dependencies datasource='federated.0037ml11wyiqf31fviptn18eudu9'>
+            <column caption='Geoid10' datatype='string' name='[GEOID10]' role='dimension' type='nominal' />
+            <column datatype='spatial' name='[Geometry]' role='measure' type='nominal' />
+            <column-instance column='[Geometry]' derivation='Collect' name='[clct:Geometry:nk]' pivot='key' type='nominal' />
+            <column datatype='integer' name='[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]' role='measure' type='quantitative' />
+            <column-instance column='[GEOID10]' derivation='None' name='[none:GEOID10:nk]' pivot='key' type='nominal' />
+            <column-instance column='[cluster (Percent-Difference 7-Cluster Solution Clusters.csv)]' derivation='None' name='[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' pivot='key' type='ordinal' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='legend'>
+            <format attr='font-family' value='Tw Cen MT' />
+          </style-rule>
+          <style-rule element='legend-title-text'>
+            <format attr='color' field='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' value='Cluster' />
+          </style-rule>
+          <style-rule element='map-layer'>
+            <format attr='enabled' id='b01002_001e' value='false' />
+            <format attr='enabled' id='b01002_002e' value='false' />
+            <format attr='enabled' id='b01002_003e' value='false' />
+            <format attr='enabled' id='dp02_0001e' value='false' />
+            <format attr='enabled' id='dp02_0015e' value='false' />
+            <format attr='enabled' id='dp03_0027e_plus_dp03_0029e' value='false' />
+            <format attr='enabled' id='dp03_0028e' value='false' />
+            <format attr='enabled' id='dp03_0030e_plus_dp03_0031e' value='false' />
+            <format attr='enabled' id='dp03_0062e' value='false' />
+            <format attr='enabled' id='dp03_0088e' value='false' />
+            <format attr='enabled' id='dp04_0001e' value='false' />
+            <format attr='enabled' id='dp04_0046e' value='false' />
+            <format attr='enabled' id='dp04_0047e' value='false' />
+            <format attr='enabled' id='dp04_0089e' value='false' />
+            <format attr='enabled' id='dp05_0001e' value='false' />
+            <format attr='enabled' id='dp05_0002e_div_dp05_0003e' value='false' />
+            <format attr='enabled' id='dp05_0032e' value='false' />
+            <format attr='enabled' id='dp05_0033e' value='false' />
+            <format attr='enabled' id='dp05_0034e' value='false' />
+            <format attr='enabled' id='dp05_0039e' value='false' />
+            <format attr='enabled' id='dp05_0047e' value='false' />
+            <format attr='enabled' id='dp05_0053e' value='false' />
+            <format attr='enabled' id='dp05_0066e' value='false' />
+            <format attr='enabled' id='dp05_0077e' value='false' />
+          </style-rule>
+          <style-rule element='map'>
+            <format attr='washout' value='0' />
+            <format attr='map-style' value='light' />
+          </style-rule>
+          <style-rule element='map-data-layer'>
+            <format attr='palette' value='tableau-map-blue-green-light' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+              <lod column='[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]' />
+              <geometry column='[federated.0037ml11wyiqf31fviptn18eudu9].[clct:Geometry:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='mark-transparency' value='255' />
+                <format attr='has-stroke' value='true' />
+                <format attr='stroke-color' value='#ffffff' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows>[federated.0037ml11wyiqf31fviptn18eudu9].[Latitude (generated)]</rows>
+        <cols>[federated.0037ml11wyiqf31fviptn18eudu9].[Longitude (generated)]</cols>
+      </table>
+      <simple-id uuid='{5ECD2204-2EDA-48B4-BD2F-BFE667E7E50A}' />
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name='2-Cluster DB'>
+      <style />
+      <size sizing-mode='automatic' />
+      <zones>
+        <zone h='100000' id='4' type='layout-basic' w='100000' x='0' y='0'>
+          <zone h='100000' id='23' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+            <zone h='100000' id='7' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+              <zone h='100000' id='5' type='layout-basic' w='100000' x='0' y='0'>
+                <zone h='100000' id='3' name='2-Cluster Solution' w='52965' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='10' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 2 Cluster Solution.png' type='bitmap' w='47035' x='52965' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='21' name='2-Cl Sil' w='47035' x='52965' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+              </zone>
+            </zone>
+          </zone>
+          <zone-style>
+            <format attr='border-color' value='#000000' />
+            <format attr='border-style' value='none' />
+            <format attr='border-width' value='0' />
+            <format attr='margin' value='0' />
+          </zone-style>
+        </zone>
+        <zone h='14923' id='8' name='2-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' type='color' w='7587' x='5030' y='16981' />
+        <zone h='9605' id='24' name='2-Cl Av' w='15477' x='78693' y='16810' />
+      </zones>
+      <devicelayouts>
+        <devicelayout auto-generated='true' name='Phone'>
+          <size maxheight='1050' minheight='1050' sizing-mode='vscroll' />
+          <zones>
+            <zone h='100000' id='29' type='layout-basic' w='100000' x='0' y='0'>
+              <zone h='97256' id='30' param='vert' type='layout-flow' w='98392' x='804' y='1372'>
+                <zone fixed-size='280' h='100000' id='3' is-fixed='true' name='2-Cluster Solution' w='52965' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone h='14923' id='8' name='2-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' type='color' w='7587' x='5030' y='16981'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='21' is-fixed='true' name='2-Cl Sil' w='47035' x='52965' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='77' h='9605' id='24' is-fixed='true' name='2-Cl Av' w='15477' x='78693' y='16810'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='10' is-fixed='true' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 2 Cluster Solution.png' type='bitmap' w='47035' x='52965' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+              </zone>
+              <zone-style>
+                <format attr='border-color' value='#000000' />
+                <format attr='border-style' value='none' />
+                <format attr='border-width' value='0' />
+                <format attr='margin' value='8' />
+              </zone-style>
+            </zone>
+          </zones>
+        </devicelayout>
+      </devicelayouts>
+      <simple-id uuid='{325C58F2-433B-4EA1-AE9D-2FA7F82ADB91}' />
+    </dashboard>
+    <dashboard name='3-Cluster DB'>
+      <style />
+      <size sizing-mode='automatic' />
+      <zones>
+        <zone h='100000' id='4' type='layout-basic' w='100000' x='0' y='0'>
+          <zone h='100000' id='23' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+            <zone h='100000' id='7' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+              <zone h='100000' id='5' type='layout-basic' w='100000' x='0' y='0'>
+                <zone h='100000' id='3' name='3-Cluster Solution' w='50000' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='12' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 3-Cluster Solution.png' type='bitmap' w='50000' x='50000' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='21' name='3-Cl Sil' w='50000' x='50000' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+              </zone>
+            </zone>
+          </zone>
+          <zone-style>
+            <format attr='border-color' value='#000000' />
+            <format attr='border-style' value='none' />
+            <format attr='border-width' value='0' />
+            <format attr='margin' value='0' />
+          </zone-style>
+        </zone>
+        <zone h='13894' id='8' name='3-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]' type='color' w='10431' x='1906' y='81647' />
+        <zone h='10120' id='24' name='3-Cl Av' w='13869' x='82915' y='20926' />
+      </zones>
+      <devicelayouts>
+        <devicelayout auto-generated='true' name='Phone'>
+          <size maxheight='1050' minheight='1050' sizing-mode='vscroll' />
+          <zones>
+            <zone h='100000' id='29' type='layout-basic' w='100000' x='0' y='0'>
+              <zone h='97256' id='30' param='vert' type='layout-flow' w='98392' x='804' y='1372'>
+                <zone fixed-size='280' h='100000' id='3' is-fixed='true' name='3-Cluster Solution' w='50000' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone h='13894' id='8' name='3-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]' type='color' w='10431' x='1906' y='81647'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='21' is-fixed='true' name='3-Cl Sil' w='50000' x='50000' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='81' h='10120' id='24' is-fixed='true' name='3-Cl Av' w='13869' x='82915' y='20926'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='12' is-fixed='true' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 3-Cluster Solution.png' type='bitmap' w='50000' x='50000' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+              </zone>
+              <zone-style>
+                <format attr='border-color' value='#000000' />
+                <format attr='border-style' value='none' />
+                <format attr='border-width' value='0' />
+                <format attr='margin' value='8' />
+              </zone-style>
+            </zone>
+          </zones>
+        </devicelayout>
+      </devicelayouts>
+      <simple-id uuid='{EB4C2268-12A3-4F25-A5FF-CC5293C53BDD}' />
+    </dashboard>
+    <dashboard name='7-Cluster DB'>
+      <style />
+      <size sizing-mode='automatic' />
+      <zones>
+        <zone h='100000' id='4' type='layout-basic' w='100000' x='0' y='0'>
+          <zone h='100000' id='21' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+            <zone h='100000' id='7' param='horz' type='layout-flow' w='100000' x='0' y='0'>
+              <zone h='100000' id='5' type='layout-basic' w='100000' x='0' y='0'>
+                <zone h='100000' id='3' name='7-Cluster Solution' w='50000' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='10' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 7-Cluster Solution.png' type='bitmap' w='50000' x='50000' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+                <zone h='50000' id='19' name='7-Cl Sil' w='50000' x='50000' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                  </zone-style>
+                </zone>
+              </zone>
+            </zone>
+          </zone>
+          <zone-style>
+            <format attr='border-color' value='#000000' />
+            <format attr='border-style' value='none' />
+            <format attr='border-width' value='0' />
+            <format attr='margin' value='0' />
+          </zone-style>
+        </zone>
+        <zone h='36707' id='8' name='7-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' type='color' w='13214' x='1023' y='56261' />
+        <zone h='12007' id='24' name='7-Cl Av' w='15879' x='77688' y='17496' />
+      </zones>
+      <devicelayouts>
+        <devicelayout auto-generated='true' name='Phone'>
+          <size maxheight='1050' minheight='1050' sizing-mode='vscroll' />
+          <zones>
+            <zone h='100000' id='25' type='layout-basic' w='100000' x='0' y='0'>
+              <zone h='97256' id='26' param='vert' type='layout-flow' w='98392' x='804' y='1372'>
+                <zone fixed-size='280' h='100000' id='3' is-fixed='true' name='7-Cluster Solution' w='50000' x='0' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone h='36707' id='8' name='7-Cluster Solution' pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' type='color' w='13214' x='1023' y='56261'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='19' is-fixed='true' name='7-Cl Sil' w='50000' x='50000' y='0'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='96' h='12007' id='24' is-fixed='true' name='7-Cl Av' w='15879' x='77688' y='17496'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+                <zone fixed-size='280' h='50000' id='10' is-fixed='true' is-scaled='1' param='N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Results/Clusters Along PCs 1 &amp; 2 - Percent Difference, 7-Cluster Solution.png' type='bitmap' w='50000' x='50000' y='50000'>
+                  <zone-style>
+                    <format attr='border-color' value='#000000' />
+                    <format attr='border-style' value='none' />
+                    <format attr='border-width' value='0' />
+                    <format attr='margin' value='4' />
+                    <format attr='padding' value='0' />
+                  </zone-style>
+                </zone>
+              </zone>
+              <zone-style>
+                <format attr='border-color' value='#000000' />
+                <format attr='border-style' value='none' />
+                <format attr='border-width' value='0' />
+                <format attr='margin' value='8' />
+              </zone-style>
+            </zone>
+          </zones>
+        </devicelayout>
+      </devicelayouts>
+      <simple-id uuid='{DA14355E-1A50-4F86-8326-7C562D2D496E}' />
+    </dashboard>
+    <dashboard name='Clusters' type='storyboard'>
+      <style />
+      <size sizing-mode='automatic' />
+      <zones>
+        <zone h='100000' id='2' type='layout-basic' w='100000' x='0' y='0'>
+          <zone h='97256' id='1' param='vert' removable='false' type='layout-flow' w='98392' x='804' y='1372'>
+            <zone h='10806' id='4' paired-zone-id='5' removable='false' type='flipboard-nav' w='98392' x='804' y='1372' />
+            <zone h='86450' id='5' paired-zone-id='4' removable='false' type='flipboard' w='98392' x='804' y='12178'>
+              <flipboard active-id='3' nav-type='dot' show-nav-arrows='true'>
+                <story-points>
+                  <story-point captured-sheet='2-Cluster DB' id='1' />
+                  <story-point captured-sheet='3-Cluster DB' id='2'>
+                    <capturedDeltas>
+                      <worksheet name='3-Cluster Solution'>
+                        <style delta-type='added'>
+                          <style-rule element='axis'>
+                            <encoding attr='space' class='0' field='[federated.0037ml11wyiqf31fviptn18eudu9].[Latitude (generated)]' field-type='quantitative' max='5691286.2679239111' min='5535013.2466605175' projection='EPSG:3857' range-type='fixed' scope='rows' type='space' />
+                            <encoding attr='space' class='0' field='[federated.0037ml11wyiqf31fviptn18eudu9].[Longitude (generated)]' field-type='quantitative' max='-10304345.06433505' min='-10473288.868929021' projection='EPSG:3857' range-type='fixed' scope='cols' type='space' />
+                          </style-rule>
+                        </style>
+                      </worksheet>
+                    </capturedDeltas>
+                  </story-point>
+                  <story-point captured-sheet='7-Cluster DB' id='3'>
+                    <capturedDeltas>
+                      <worksheet name='7-Cluster Solution'>
+                        <style delta-type='added'>
+                          <style-rule element='axis'>
+                            <encoding attr='space' class='0' field='[federated.0037ml11wyiqf31fviptn18eudu9].[Latitude (generated)]' field-type='quantitative' max='5695301.8753473237' min='5531826.394948273' projection='EPSG:3857' range-type='fixed' scope='rows' type='space' />
+                            <encoding attr='space' class='0' field='[federated.0037ml11wyiqf31fviptn18eudu9].[Longitude (generated)]' field-type='quantitative' max='-10301429.49285776' min='-10478159.739660205' projection='EPSG:3857' range-type='fixed' scope='cols' type='space' />
+                          </style-rule>
+                        </style>
+                      </worksheet>
+                    </capturedDeltas>
+                  </story-point>
+                </story-points>
+              </flipboard>
+            </zone>
+          </zone>
+          <zone-style>
+            <format attr='border-color' value='#000000' />
+            <format attr='border-style' value='none' />
+            <format attr='border-width' value='0' />
+            <format attr='margin' value='8' />
+          </zone-style>
+        </zone>
+      </zones>
+      <simple-id uuid='{7C3F17EE-75A6-4EE6-872F-AB23A7BA0BCE}' />
+    </dashboard>
+  </dashboards>
+  <windows source-height='93'>
+    <window class='dashboard' maximized='true' name='Clusters'>
+      <viewpoints />
+      <active id='5' />
+      <simple-id uuid='{CC636C54-33DE-4A33-80D9-5D018EAC6BBE}' />
+    </window>
+    <window class='worksheet' hidden='true' name='2-Cl Av'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+      </cards>
+      <simple-id uuid='{4A0E6028-1FA2-41DD-8B45-5C01B515437B}' />
+    </window>
+    <window class='worksheet' hidden='true' name='2-Cl Sil'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='2' param='[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Medoid:ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0lqsdh01n3amzz10gxpeq0ace31p].[none:Medoid:ok]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{4CA98428-699E-482F-B294-4CD4A8485F38}' />
+    </window>
+    <window class='dashboard' hidden='true' name='2-Cluster DB'>
+      <viewpoints>
+        <viewpoint name='2-Cl Av'>
+          <zoom type='entire-view' />
+        </viewpoint>
+        <viewpoint name='2-Cl Sil'>
+          <zoom type='entire-view' />
+        </viewpoint>
+        <viewpoint name='2-Cluster Solution'>
+          <zoom type='entire-view' />
+          <highlight>
+            <color-one-way>
+              <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]</field>
+            </color-one-way>
+          </highlight>
+        </viewpoint>
+      </viewpoints>
+      <active id='24' />
+      <simple-id uuid='{5EC580FD-8736-4DC5-A684-E1E6C29D269F}' />
+    </window>
+    <window class='worksheet' hidden='true' name='2-Cluster Solution'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]</field>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 2-Cluster Solutions Clusters.csv):ok]</field>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:qk]</field>
+            <field>[federated.16qnn6j065ppdv1apki610gc2stp].[none:cluster:qk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{AC91911A-02E5-4F88-95DA-05B8A2750A85}' />
+    </window>
+    <window class='worksheet' hidden='true' name='3-Cl Av'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+      </cards>
+      <simple-id uuid='{4DDA1791-06F5-4B55-BBC0-C08834BEDFFD}' />
+    </window>
+    <window class='worksheet' hidden='true' name='3-Cl Sil'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[federated.0q36qq5136rfck159dsmu0xw6qpj].[sum:Medoid:ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0q36qq5136rfck159dsmu0xw6qpj].[sum:Medoid:ok]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{8F19C247-D7F1-47F2-B163-DADA95DB3FF6}' />
+    </window>
+    <window class='dashboard' hidden='true' name='3-Cluster DB'>
+      <viewpoints>
+        <viewpoint name='3-Cl Av'>
+          <zoom type='entire-view' />
+        </viewpoint>
+        <viewpoint name='3-Cl Sil'>
+          <zoom type='entire-view' />
+        </viewpoint>
+        <viewpoint name='3-Cluster Solution'>
+          <zoom type='entire-view' />
+          <highlight>
+            <color-one-way>
+              <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]</field>
+            </color-one-way>
+          </highlight>
+        </viewpoint>
+      </viewpoints>
+      <active id='24' />
+      <simple-id uuid='{DD573971-69CA-4C60-B030-6B7420252200}' />
+    </window>
+    <window class='worksheet' hidden='true' name='3-Cluster Solution'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]</field>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster:ok]</field>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster_type:nk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{10FADA8F-C8CB-4350-8AC1-B6EE88E043EA}' />
+    </window>
+    <window class='worksheet' hidden='true' name='7-Cl Av'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+      </cards>
+      <simple-id uuid='{216BDA55-0AAC-4291-A4F4-39CC92D960A3}' />
+    </window>
+    <window class='worksheet' hidden='true' name='7-Cl Sil'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{886ECA5F-6389-47D6-A2C5-E47A715AAA57}' />
+    </window>
+    <window class='dashboard' hidden='true' name='7-Cluster DB'>
+      <viewpoints>
+        <viewpoint name='7-Cl Av'>
+          <zoom type='entire-view' />
+        </viewpoint>
+        <viewpoint name='7-Cl Sil'>
+          <zoom type='entire-view' />
+          <highlight field='[federated.0dhxknb072ajpm10jarw71uy35d8].[none:Medoid:ok]'>
+            <bucket-selection />
+          </highlight>
+        </viewpoint>
+        <viewpoint name='7-Cluster Solution'>
+          <zoom type='entire-view' />
+          <highlight>
+            <color-one-way>
+              <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]</field>
+            </color-one-way>
+          </highlight>
+        </viewpoint>
+      </viewpoints>
+      <active id='24' />
+      <simple-id uuid='{0EAF4DA0-A315-4C54-B0B5-FFB370B02415}' />
+    </window>
+    <window class='worksheet' hidden='true' name='7-Cluster Solution'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:GEOID10:nk]</field>
+            <field>[federated.0037ml11wyiqf31fviptn18eudu9].[none:cluster (Percent-Difference 7-Cluster Solution Clusters.csv):ok]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{317D6059-9D17-427F-852D-6F9D4FB7B329}' />
+    </window>
+  </windows>
+  <thumbnails>
+    <thumbnail height='192' name='Clusters' width='192'>
+      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
+      zs/nS91+KwAAAABJRU5ErkJggg==
+    </thumbnail>
+  </thumbnails>
+</workbook>
