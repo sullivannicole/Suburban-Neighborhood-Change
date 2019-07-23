@@ -6,11 +6,9 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-```
-
 # Import packages
 
-```{r}
+
 library(tidyverse)
 library(openxlsx)
 library(foreign)
@@ -31,8 +29,6 @@ library(extrafont)
 
 Sys.setenv(PATH = paste("C:\\Python27\\ArcGIS10.5\\", Sys.getenv("PATH"), sep=";"))
 ```
-
-
 
 # Cluster on the *absolute difference* between 2000 and 2017 values
 
@@ -232,12 +228,13 @@ perc_diff <- x00_17 %>%
   select(TRACT, poc_diff, age_diff, hhi_diff, emv_diff, rent_diff, bld_diff) %>%
   filter(!is.na(emv_diff))
 
-write_csv(perc_diff, "Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+#write_csv(perc_diff, "Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
 ```
 
 # Percent difference with z-scores
 
 ```{r}
+# perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
 # Create z-scores
 set.seed(413)
 
@@ -357,7 +354,22 @@ ggplot(aes(value)) +
 ggplotly(hist)
 ```
 
-# Percent difference without z-scores (because all in the same units - % - & same scale - -inf to inf)
+# Percent-Difference Average Silhouette Width from 2 to 10 Clusters
+
+```{r}
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Width by K-Specified Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+
+ggsave("Results/Percent-Difference Average Silhouette Width by Number of Clusters.png", width = 10, height = 6)
+
+```
+
+# Percent difference without z-scores (because all in the same units - % - & same scale - -inf to inf) - 3-cluster solution
 
 ```{r}
 set.seed(413)
@@ -368,22 +380,22 @@ snc_tr_order <- perc_diff %>%
   select(TRACT)
 
 # Create distance matrix of percentages
-z_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
-fviz_dist(dist(z_matrix)) # Look at distance matrix at a glance
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+#fviz_dist(dist(diff_matrix)) # Look at distance matrix at a glance
 
-fviz_nbclust(z_matrix, pam, method = "silhouette")
+#fviz_nbclust(diff_matrix, pam, method = "silhouette")
 
 set.seed(413)
 options(scipen=999)
-pam_perc_diff <- pam(z_matrix, diss = TRUE, k = 3)
-plot(pam_perc_diff)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 3)
+#plot(pam_perc_diff)
 
 # set.seed(92)
 # options(scipen=999)
 # pam_perc_diff <- pam(z_matrix, diss = TRUE, k = 3)
 # plot(pam_perc_diff)
 
-pam_perc_diff$data <- z_matrix
+pam_perc_diff$data <- diff_matrix
 
 medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
 clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
@@ -443,16 +455,16 @@ snc_tr_order <- perc_diff %>%
   select(TRACT)
 
 # Create distance matrix of z-scores
-z_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
 
-fviz_nbclust(z_matrix, pam, method = "silhouette")
-ggsave("Results/Percent-Difference Average Silhouette Width by Number of Clusters.png", width = 10, height = 6)
+#fviz_nbclust(diff_matrix, pam, method = "silhouette")
+#ggsave("Results/Percent-Difference Average Silhouette Width by Number of Clusters.png", width = 10, height = 6)
 
 set.seed(413)
 options(scipen=999)
-pam_perc_diff <- pam(z_matrix, diss = TRUE, k = 2)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 2)
 
-pam_perc_diff$data <- z_matrix
+pam_perc_diff$data <- diff_matrix
 
 medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
 clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
@@ -504,12 +516,24 @@ ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 2 Cluster Solutio
 # See a 7-cluster solution
 
 ```{r}
+perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
 set.seed(413)
-options(scipen=999)
-pam_perc_diff <- pam(z_matrix, diss = TRUE, k = 7)
+
+perc_diff_clust <- perc_diff %>% select(-TRACT)
+
+snc_tr_order <- perc_diff %>%
+  select(TRACT)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 7)
 plot(pam_perc_diff)
 
-pam_perc_diff$data <- z_matrix
+pam_perc_diff$data <- diff_matrix
 
 medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
 clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
@@ -539,7 +563,7 @@ ggplot(pam_perc_diff_df, aes(Medoid, `Average Width`)) +
 clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
   mutate(cluster_type = "Percent-difference, no z-scores, 7-solution")
 
-#write_csv(clusters_perc, "Results/Percent-Difference 7-Cluster Solution Clusters.csv")
+write_csv(clusters_perc, "Results/Percent-Difference 7-Cluster Solution Clusters.csv")
 
 fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
   labs(title = "Clusters along Principal Components 1 & 2") +
@@ -549,7 +573,12 @@ fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
         legend.position = "bottom",
         axis.ticks = element_blank())
 
-#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 7-Cluster Solution.png", width = 10, height = 6)
+ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 7-Cluster Solution.png", width = 10, height = 6)
+```
+
+# Use PCA to get viz of clusters
+
+```{r}
 library(stats)
 
 pca <- stats::prcomp(pam_perc_diff$data, scale = FALSE, center = FALSE)
@@ -558,7 +587,7 @@ ind <- facto_summarize(pca, element = "ind", result = "coord", axes = axes)
 eig <- get_eigenvalue(pca)[axes, 2]
 
 plot.data <- cbind.data.frame(ind, cluster = pam_perc_diff$cluster)
-write_csv(plot.data, "PCA on 7 clusters.csv")
+#write_csv(plot.data, "PCA on 7 clusters.csv")
 
 dims <- plot.data %>% select(Dim.1, Dim.2)
 dims_scaled <- scale(dims)
@@ -575,4 +604,959 @@ ggplot(aes(Dim.1*-1, Dim.2, color = cluster)) +
 
 ```
 
+# See a 4-cluster solution
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 4)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+pam_perc_diff_df <- bind_cols(medoids, clus_width) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 4-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 4-solution")
+
+#write_csv(clusters_perc, "Results/Percent-Difference 4-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 4-Cluster Solution.png", width = 10, height = 6)
+
+pam_perc_diff$clusinfo
+```
+
+# See a 6-cluster solution
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 6)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+pam_perc_diff_df <- bind_cols(medoids, clus_width) %>% mutate(`Average Width` = av_width$value)
+
+write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+write_csv(clusters_perc, "Results/Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+pam_perc_diff$clusinfo
+```
+
+# Cluster on the *percent difference* of expanded datset between 2000 and 2017 values
+
+```{r}
+x00_17 <- read_csv("Data/2000 and 2017 Values for SNC Tracts and Variables Expanded.csv")
+
+perc_diff <- x00_17 %>%
+  mutate(builtSince00_2000 = ifelse(builtSince00_2000 == 0, 1, builtSince00_2000)) %>%
+  mutate(poc_diff = (perc_poc-percentPOC2000*100)/percentPOC2000, # Convert decimal percent to whole points
+         x65_diff = (perc_65up-perSixFive2000*100)/perSixFive2000, #Convert decimal percent to whole points
+         hhi_diff = (median_hhi-medHHinc2000)/medHHinc2000*100,
+         emv_diff = (emv-MedianValue2000)/MedianValue2000*100,
+         rent_diff = (rent-rent2000)/rent2000*100,
+         bld_diff = (perc_new_bld-builtSince00_2000*100)/builtSince00_2000,
+         renter_diff = (perc_rented-percentRent2000*100)/percentRent2000,
+         owned_diff = (perc_owned-percentRes2000*100)/percentRes2000,
+         x18_diff = (perc_18under-perEighteen2000*100)/perEighteen2000,
+         pop_diff = (pop_total-Pop2000)/Pop2000*100) %>%
+  select(TRACT, poc_diff, x65_diff, hhi_diff, emv_diff, rent_diff, bld_diff, renter_diff, owned_diff, x18_diff, pop_diff) %>%
+  filter(!is.na(emv_diff) & TRACT != 27053011704 & TRACT != 27053012101) # Get rid of irrelevant core tracts and tract for which there's missing parcel data
+
+hist(perc_diff$poc_diff)
+
+x00_17 %>%
+  filter(TRACT == 27123042602)
+
+write_csv(perc_diff, "Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Expanded Variables.csv")
+```
+
+# See a 6-cluster solution with expanded variables
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+set.seed(413)
+
+perc_diff_clust <- perc_diff %>% select(-TRACT, -owned_diff)
+
+snc_tr_order <- perc_diff %>%
+  select(TRACT)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 3)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+#write_csv(clusters_perc, "Results/Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/Average Silhouette Width by Number of Clusters - Expanded Dataset.png", width = 10, height = 6)
+
+
+```
+
+# See a 3-cluster solution with expanded variables
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+# set.seed(413)
+# 
+# perc_diff_clust <- perc_diff %>% select(-TRACT)
+# 
+# snc_tr_order <- perc_diff %>%
+#   select(TRACT)
+# 
+# # Create distance matrix of z-scores
+# diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 3)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+#write_csv(clusters_perc, "Results/Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+```
+
+# See a 3-cluster solution with expanded variables
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+set.seed(413)
+
+perc_diff_clust <- perc_diff %>% select(-TRACT, -pop_diff, -owned_diff)
+
+snc_tr_order <- perc_diff %>%
+  select(TRACT)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 2)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+#write_csv(clusters_perc, "Results/Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/Average Silhouette Width by Number of Clusters - Expanded Dataset.png", width = 10, height = 6)
+
+
+```
+
+#MAPDP
+
+```{r}
+
+library(matrixStats)
+library(compiler)
+enableJIT(3)
+
+#' Compute Stundent-t log likeligood
+stnll <- function(x,mu,a,c,B,D) {
+  nu <- a-D+1;
+  Lambda <- c*nu/(c+1)*B;
+  nl <- (nu+D)/2*log(1+t(x-mu)%*%Lambda%*%(x-mu)/nu)-0.5*log(det(Lambda))+lgamma(nu/2)-lgamma((nu+D)/2)+D/2*log(nu*pi);
+
+  return(nl)
+}
+
+#' Update Normal-Wishart hyper parameters
+nwupd <- function(Nki,xki,m0,a0,c0,B0) {
+  xmki <- 0;
+  if(!is.matrix(xki)){
+    xmki <- mean(xki);
+  }else{
+    xmki <- rowMeans(xki);
+  }
+
+  xmcki <-0;
+  b = kronecker(matrix(1,1,Nki),xmki);
+  if(dim(b)[1]==1 && dim(b)[2]==1){
+    xmcki <-  xki- b[1,1];
+  }
+  else{
+    xmcki <-  xki-b;
+  }
+
+  Ski <- tcrossprod(xmcki)
+  cki <- c0+Nki;
+  mki <- (c0*m0+Nki*xmki)/cki;
+
+  Bki <- solve(solve(B0)+Ski+c0*Nki/cki*(xmki-m0)%*%t(xmki-m0));
+  aki <- a0+Nki;
+
+  resultList <- list("mki"=mki,"aki"=aki,"cki"=cki,"Bki"=Bki);
+  return(resultList);
+}
+
+# Set up Normal-Wishart MAP-DP prior parameters
+N0 <- 1;                           # Prior count (concentration parameter)
+m0 <- rowMeans(X);                     # Normal-Wishart prior mean
+a0 <- 10;                            # Normal-Wishart prior scale
+c0 <- 10/N;                          # Normal-Wishart prior degrees of freedom
+B0 <- diag(1./(0.05*rowVars(X)));    # Normal-Wishart prior precision
+X <- matrix #Dissimilarity matrix
+
+#' MAP-DP Clustering
+#'
+#'It implements the algorithm descriped by
+#'Raykov YP, Boukouvalas A, Baig F, Little MA (2016)
+#'What to Do When K-Means Clustering Fails: A Simple yet Principled Alternative Algorithm.
+#'PLOS ONE 11(9): e0162259. https://doi.org/10.1371/journal.pone.0162259
+#'
+#' @param X DxN matrix of data
+#' @param N0 prior count (DP concentration paramter)
+#' @param m0 cluster prior mean
+#' @param a0 cluster prior scale
+#' @param c0 cluster prior degrees of freedom
+#' @param B0 cluster prior precision (inverse covariance)
+#' @export
+clustMapDP <- function(X,N0,m0,a0,c0,B0) {
+ D <- dim(X)[1];
+ N <- dim(X)[2];
+ epsilon <- 1e-6;
+
+ #Initialization
+ K <- 1;
+ z <- matrix(1,N,1);
+ Enew <- Inf;
+ dE <- Inf;
+ iter <- 0;
+ E <- c();
+
+ while (abs(dE) > epsilon) {
+   Eold <- Enew;
+   dik <- matrix(Inf,N,1);
+
+   for(i in 1:N){
+     dk <- matrix(Inf,K+1,1);
+     Nki <- matrix(Inf,K+1,1);
+
+     for(k in 1:K){
+       zki <- (z==k);
+       zki[i] <- FALSE;
+       Nki[k] <- sum(zki);
+
+       # Updates meaningless for Nki=0
+       if(Nki[k]==0){
+         next;
+       }
+
+       # Update NW cluster hyper parameters
+        nwupdList <- nwupd(Nki[k],X[,zki],m0,a0,c0,B0);
+        mki <- nwupdList$mki;
+        aki <- nwupdList$aki;
+        cki <- nwupdList$cki;
+        Bki <- nwupdList$Bki;
+
+       # Computer Student-t NLL, existing cluster
+        help <-stnll(X[,i],mki,aki,cki,Bki,D);
+        dk[k] <- help;
+     }
+
+     if(iter==0){
+       Nki[1]<-1;
+     }
+
+     Nki[K+1] = N0;
+
+     # Computer Student-t NLL, new cluster
+
+     dk[K+1] <- stnll(X[,i],m0,a0,c0,B0,D);
+
+     # Computer MAP Assignment
+     v = dk-log(Nki);
+     z[i] <- which.min(v);
+     dik[i] <- v[z[i]];
+
+     # Create new cluster if required
+     if(z[i] == (K+1)){
+       K <- K+1;
+     }
+   }
+
+   # Remove any empty clusters and re-assign
+   Knz = 0;
+   for(k in 1:K){
+     i <- (z==k);
+     Nk <- sum(i);
+     if (Nk>0){
+       Knz <- Knz + 1;
+       z[i] <- Knz;
+     }
+   }
+   K <- Knz;
+   Nk <- hist(z,1:K,plot=FALSE)$counts
+
+   # Compute updated NLL
+   Enew <- sum(dik)-K*log(N0)-sum(lgamma(Nk));
+   dE <- Eold - Enew;
+   iter <- iter +1;
+   E <- c(E,Enew);
+ }
+
+ # Compute cluster centroids
+  mu <- matrix(NaN,D,K);
+  for(k in 1:K){
+    if (k %in% unique(z) & length(z[z==k]) > 1){
+      xk <- X[,z==k];
+      mu[,k] <- rowMeans(xk);  
+    } else if (k %in% unique(z) & length(z[z==k]) == 1){
+      mu[,k] <- X[z==k]
+    } else {
+      stop('Something went terribly wrong, check cluster centroids assignation')
+    }
+  }
+
+
+ resultList <- list("mu"=mu,"z"=z,"K"=K,"E"=E);
+ return(resultList);
+}
+```
+
+# *Percent difference* between 2000 and 2015, all variables, all tracts (suburban and urban)
+
+```{r}
+x00 <- read_csv("Data/cleaned_variables2000.csv")
+x15 <- read_csv("Data/cleaned_variables2015.csv")
+snc_tr <- read.xlsx("Data/SNC tracts.xlsx")
+
+x00_15 <- left_join(x00, x15, by = "TRACT") %>% unique()
+
+change_00_15 <- x00_15 %>%
+  transmute(pop_diff = (Pop2015-Pop2000)/Pop2000,
+         popden_diff = (PopDen2015-PopDen2000)/PopDen2000,
+         poc_diff = (percentPOC2015-percentPOC2000)/percentPOC2000,
+         lep_diff = (perLEP2015-perLEP2000)/perLEP2000,
+         age18_diff = (perEighteen2015-perEighteen2000)/perEighteen2000,
+         age65_diff = (perSixFive2015-perSixFive2000)/perSixFive2000,
+         edu_diff = (perBachelors2015-perBachelors2000)/perBachelors2000,
+         pov_diff = (percent185povRate2015-percent185povRate2000)/percent185povRate2000,
+         hhi_diff = (medHHinc2015-medHHinc2000)/medHHinc2000,
+         renter_diff = (percentRent2105-percentRent2000)/percentRent2000,
+         buildland_diff = (BuildLand2015-BuildLand2000)/BuildLand2000,
+         unit_diff = (units2015-units2000)/units2000,
+         emv_diff = (MedianValue2015-MedianValue2000)/MedianValue2000,
+         rent_diff = (rent2015-rent2000)/rent2000,
+         afford_diff = ifelse(percentAfford2000 == 0, (percentAfford2015-percentAfford2000), (percentAfford2015-percentAfford2000)/percentAfford2000),
+         res_diff = (percentRes2015-percentRes2000)/percentRes2000,
+         newbld_diff = (builtSince00_2015-builtSince00_2000)/builtSince00_2000,
+         tract = TRACT) %>%
+  gather(1:17, key = "Category", value = "n") %>%
+  group_by(Category) %>%
+  mutate(n = ifelse(n == Inf, median(n), n)) %>%
+  ungroup() %>%
+  spread(Category, value = "n") %>%
+  mutate(newbld_diff = ifelse(is.na(newbld_diff), median(newbld_diff, na.rm = T), newbld_diff),
+         res_diff = ifelse(is.na(res_diff), median(res_diff, na.rm = T), res_diff))
+
+change_snc <- inner_join(change_00_15, snc_tr, by = c("tract" = "GEOID"))
+
+summary(change_00_15)
+
+hist_gen <- function(num) {
+
+tibble_col <- as_tibble(change_00_15[num])
+title_name <- names(tibble_col)
+  
+plot <- change_00_15[num] %>%
+    rename(n = 1) %>%
+    ggplot(aes(n)) +
+    geom_density() +
+  theme_minimal() +
+  labs(title = title_name) +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+plotly_ob <- ggplotly(plot)
+
+path <- paste0("EDADistribution of ", title_name, " difference.html")
+
+htmlwidgets::saveWidget(plotly_ob, path)
+  
+}
+
+nums <- c(2:18)
+purrr::map(nums, hist_gen)
+
+```
+
+# See a 5-cluster solution
+
+```{r}
+#perc_diff <- read_csv("Data/Percent Difference Between 2000 and 2017 for SNC Tracts and Variables.csv")
+
+set.seed(413)
+
+perc_diff_clust <- change_snc %>% select(-tract)
+
+snc_tr_order <- change_snc %>%
+  select(tract)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 5)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+write_csv(clusters_perc, "Results/SNC 2000-2015 Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/All-Metro 2000-2015 Average Silhouette Width by Number of Clusters - 6-Clusters.png", width = 10, height = 6)
+
+library(ggdendro)
+diff_hclust <- hclust(dist(perc_diff_clust))
+
+ggdendrogram(diff_hclust)
+
+```
+
+```{r}
+library(stats)
+
+pca <- stats::prcomp(pam_perc_diff$data, scale = FALSE, center = FALSE)
+summary(pca)
+axes <- c(1,2)
+ind <- facto_summarize(pca, element = "ind", result = "coord", axes = axes)
+eig <- get_eigenvalue(pca)[axes, 2]
+
+plot.data <- cbind.data.frame(ind, cluster = pam_perc_diff$cluster)
+#write_csv(plot.data, "PCA on 7 clusters.csv")
+
+dims <- plot.data %>% select(Dim.1, Dim.2)
+dims_scaled <- scale(dims)
+
+dims_scaled_df <- as_tibble(dims_scaled)
+cluster_df <- as_tibble(pam_perc_diff$clustering) %>% rename(cluster = value)
+dims_cl <- bind_cols(dims_scaled_df, cluster_df)
+
+dims_cl %>%
+ggplot(aes(Dim.1*-1, Dim.2, color = cluster)) +
+  geom_point() +
+  geom_jitter()
+
+library(ggfortify)
+autoplot(prcomp(pam_perc_diff$data, loadings= TRUE, loadings.label = TRUE))
+
+```
+
+Select 2000 exurbs
+
+```{r}
+z00 <- read.xlsx("Data/2-Set Clusters/z_scores2000.xlsx")
+
+cl1_00 <- z00 %>%
+  filter(cluster == 3) %>%
+  select(TRACT)
+
+snc_exurb <- inner_join(cl1_00, change_snc, by = c("TRACT" = "tract")) %>% unique()
+
+```
+
+# See a z-scored 2-cluster solution of exurbs only
+
+```{r}
+# Results of uncapped scaling - cannot transform logarithmically because some changes are negative & the direction is important
+z_no_cap <- as_tibble(scale(change_snc[-1]))
+summary(z_no_cap)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(z_no_cap), labels = TRUE)
+
+snc_tr_order <- change_snc %>%
+  select(tract)
+
+# Create distance matrix of z-scores
+#diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 2)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+write_csv(clusters_perc, "Results/SNC 2000-2015 Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/All-Metro 2000-2015 Average Silhouette Width by Number of Clusters - 6-Clusters.png", width = 10, height = 6)
+
+library(ggdendro)
+diff_hclust <- hclust(dist(perc_diff_clust))
+
+ggdendrogram(diff_hclust)
+
+autoplot(prcomp(pam_perc_diff$data, loadings= TRUE, loadings.label = TRUE))
+```
+
+# Z-scored absolute difference between 2000 and 2015 on all variables
+
+```{r}
+abs_change_00_15 <- x00_15 %>%
+  transmute(pop_diff = (Pop2015-Pop2000),
+         popden_diff = (PopDen2015-PopDen2000),
+         poc_diff = (percentPOC2015-percentPOC2000),
+         lep_diff = (perLEP2015-perLEP2000),
+         age18_diff = (perEighteen2015-perEighteen2000),
+         age65_diff = (perSixFive2015-perSixFive2000),
+         edu_diff = (perBachelors2015-perBachelors2000),
+         pov_diff = (percent185povRate2015-percent185povRate2000),
+         hhi_diff = (medHHinc2015-medHHinc2000),
+         renter_diff = (percentRent2105-percentRent2000),
+         buildland_diff = (BuildLand2015-BuildLand2000),
+         unit_diff = (units2015-units2000),
+         emv_diff = (MedianValue2015-MedianValue2000),
+         rent_diff = (rent2015-rent2000),
+         afford_diff = (percentAfford2015-percentAfford2000),
+         res_diff = (percentRes2015-percentRes2000),
+         newbld_diff = (builtSince00_2015-builtSince00_2000),
+         tract = TRACT) %>%
+  gather(1:17, key = "Category", value = "n") %>%
+  group_by(Category) %>%
+  mutate(n = ifelse(n == Inf, median(n), n)) %>%
+  ungroup() %>%
+  spread(Category, value = "n")
+
+change_snc <- inner_join(abs_change_00_15, snc_tr, by = c("tract" = "GEOID"))
+
+hist_gen <- function(num) {
+
+tibble_col <- as_tibble(abs_change_00_15[num])
+title_name <- names(tibble_col)
+  
+plot <- change_00_15[num] %>%
+    rename(n = 1) %>%
+    ggplot(aes(n)) +
+    geom_density() +
+  theme_minimal() +
+  labs(title = title_name) +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+plotly_ob <- ggplotly(plot)
+
+path <- paste0("Distribution of ", title_name, " absolute difference.html")
+
+htmlwidgets::saveWidget(plotly_ob, path)
+  
+}
+
+nums <- c(2:18)
+purrr::map(nums, hist_gen)
+
+# Results of uncapped scaling - cannot transform logarithmically because some changes are negative & the direction is important
+z_no_cap <- as_tibble(scale(abs_change_00_15[-1]))
+summary(z_no_cap)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(z_no_cap), labels = TRUE)
+
+snc_tr_order <- abs_change_00_15 %>%
+  select(tract)
+
+# Create distance matrix of z-scores
+#diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 2)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+write_csv(clusters_perc, "Results/SNC 2000-2015 Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/All-Metro 2000-2015 Average Silhouette Width by Number of Clusters - 6-Clusters.png", width = 10, height = 6)
+
+library(ggdendro)
+diff_hclust <- hclust(dist(perc_diff_clust))
+
+ggdendrogram(diff_hclust)
+
+autoplot(prcomp(pam_perc_diff$data, loadings= TRUE, loadings.label = TRUE))
+
+
+
+```
+
+```{r}
+# x00 <- read_csv("Data/cleaned_variables2000.csv")
+# x15 <- read_csv("Data/cleaned_variables2015.csv")
+# snc_tr <- read.xlsx("Data/SNC tracts.xlsx")
+
+x00_15 <- left_join(x00, x15, by = "TRACT") %>% unique()
+
+x00_t <- x00 %>%
+  select(-Zero, -Missing, -Count2000, -ageDiversity2000, -transitAcess2000, -driveAcess2000, -coreBusinesses2000, -civicInfrastructure2000, -CO_ID)
+
+change_00_15 <- x00_15 %>%
+  transmute(pop_diff = (Pop2015-Pop2000)/Pop2000,
+         popden_diff = (PopDen2015-PopDen2000)/PopDen2000,
+         poc_diff = (percentPOC2015-percentPOC2000)/percentPOC2000,
+         lep_diff = (perLEP2015-perLEP2000)/perLEP2000,
+         age18_diff = (perEighteen2015-perEighteen2000)/perEighteen2000,
+         age65_diff = (perSixFive2015-perSixFive2000)/perSixFive2000,
+         edu_diff = (perBachelors2015-perBachelors2000)/perBachelors2000,
+         pov_diff = (percent185povRate2015-percent185povRate2000)/percent185povRate2000,
+         hhi_diff = (medHHinc2015-medHHinc2000)/medHHinc2000,
+         renter_diff = (percentRent2105-percentRent2000)/percentRent2000,
+         buildland_diff = (BuildLand2015-BuildLand2000)/BuildLand2000,
+         unit_diff = (units2015-units2000)/units2000,
+         emv_diff = (MedianValue2015-MedianValue2000)/MedianValue2000,
+         rent_diff = (rent2015-rent2000)/rent2000,
+         afford_diff = ifelse(percentAfford2000 == 0, (percentAfford2015-percentAfford2000), (percentAfford2015-percentAfford2000)/percentAfford2000),
+         res_diff = (percentRes2015-percentRes2000)/percentRes2000,
+         newbld_diff = (builtSince00_2015-builtSince00_2000)/builtSince00_2000,
+         tract = TRACT) %>%
+  gather(1:17, key = "Category", value = "n") %>%
+  group_by(Category) %>%
+  mutate(n = ifelse(n == Inf, median(n), n)) %>%
+  ungroup() %>%
+  spread(Category, value = "n") %>%
+  mutate(newbld_diff = ifelse(is.na(newbld_diff), median(newbld_diff, na.rm = T), newbld_diff),
+         res_diff = ifelse(is.na(res_diff), median(res_diff, na.rm = T), res_diff))
+
+change_snc <- inner_join(change_00_15, snc_tr, by = c("tract" = "GEOID"))
+change_and_2000_values <- left_join(change_snc, x00_t, by = c("tract" = "TRACT"))
+
+```
+
+```{r}
+# Results of uncapped scaling - cannot transform logarithmically because some changes are negative & the direction is important
+z_no_cap <- as_tibble(scale(change_and_2000_values[-1]))
+summary(z_no_cap)
+
+# Create distance matrix of z-scores
+diff_matrix <- as.matrix(dist(z_no_cap), labels = TRUE)
+
+snc_tr_order <- change_and_2000_values %>%
+  select(tract)
+
+# Create distance matrix of z-scores
+#diff_matrix <- as.matrix(dist(perc_diff_clust), labels = TRUE)
+
+set.seed(413)
+options(scipen = 999)
+pam_perc_diff <- pam(diff_matrix, diss = TRUE, k = 2)
+
+plot(pam_perc_diff)
+
+pam_perc_diff$data <- diff_matrix
+
+medoids <- as_tibble(pam_perc_diff$medoids) %>% rename(Medoid = value)
+clus_width <- as_tibble(pam_perc_diff$silinfo$clus.avg.widths) %>% rename(`Cluster Average Width` = value)
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width)
+obs <- as_tibble(pam_perc_diff$clusinfo[,1]) %>% rename(Observations = value)
+pam_perc_diff_df <- bind_cols(medoids, clus_width, obs) %>% mutate(`Average Width` = av_width$value)
+
+#write_csv(pam_perc_diff_df, "Results/Cluster Silhouettes - Percent-Difference, 6-Cluster Solution.csv")
+
+av_width <- as_tibble(pam_perc_diff$silinfo$avg.width) %>%
+  mutate(av_width_equals = "Average cluster width = ",
+         value = round(value, 2)) %>%
+  unite(label, av_width_equals, value, sep = "")
+
+clusters_perc <- as_tibble(bind_cols(tract = snc_tr_order[,1], cluster = pam_perc_diff$clustering)) %>%
+  mutate(cluster_type = "Percent-difference, no z-scores, 6-solution")
+
+write_csv(clusters_perc, "Results/SNC 2000-2015 Percent-Difference 6-Cluster Solution Clusters.csv")
+
+fviz_cluster(pam_perc_diff, geom = "point", ellipse.type = "norm") +
+  labs(title = "Clusters along Principal Components 1 & 2") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        legend.position = "bottom",
+        axis.ticks = element_blank())
+
+#ggsave("Results/Clusters Along PCs 1 & 2 - Percent Difference, 6-Cluster Solution.png", width = 10, height = 6)
+
+#pam_perc_diff$clusinfo
+
+fviz_nbclust(diff_matrix, pam, method = "silhouette") +
+  labs(title = "Average Silhouette Width by Number of Clusters") +
+  theme(text = element_text(family = "Tw Cen MT"),
+    plot.title = element_text(hjust = 0.5, size = 30),
+        panel.background = element_rect(fill = "white"),
+        axis.ticks = element_blank())
+
+#ggsave("Results/All-Metro 2000-2015 Average Silhouette Width by Number of Clusters - 6-Clusters.png", width = 10, height = 6)
+
+library(ggdendro)
+diff_hclust <- hclust(dist(perc_diff_clust))
+
+ggdendrogram(diff_hclust)
+
+autoplot(prcomp(pam_perc_diff$data, loadings= TRUE, loadings.label = TRUE))
+
+```
 

@@ -29,6 +29,8 @@ library(extrafont)
 #loadfonts(device = 'win')
 
 Sys.setenv(PATH = paste("C:\\Python27\\ArcGIS10.5\\", Sys.getenv("PATH"), sep=";"))
+
+#Sys.setenv(PATH = paste("C:\\Program Files\\ArcGIS\\Pro\\bin\\Python\\Scripts\\", Sys.getenv("PATH"), sep=";"))
 ```
 
 # A Note
@@ -40,7 +42,6 @@ Parcel data development contains a number of very large files that exceed GitHub
 Below is code for pulling the % new builds from Matt's 5-year ACS data file with all variables - CommDev/Research/Research/Census/ACS/Excel (zipped 'all' file); this file is too large to commit to GitHub, so it is not contained here.
 
 ```{r}
-
 housing_data <- fread('Data/acs20175_all.csv')
 
 # Built environment variable
@@ -57,40 +58,45 @@ housing_snc <- housing_data %>%
 
 ```
 
-# Import data
+# Import ACS for rent; attach to polygon and write out for imputation in ArcPro
 
 ```{r}
 acs_17 <- read.xlsx('Data/acs20175_tr.xlsx')
-snc_tracts <- read.xlsx('Data/SNC tracts.xlsx')
-housing_snc <- fread('Data/acs20175_new_builds.csv')
+#snc_tracts <- read.xlsx('Data/SNC tracts.xlsx')
+#housing_snc <- fread('Data/acs20175_new_builds.csv')
 
-snc_tracts_tidy <- snc_tracts %>%
-  mutate(GEOID = as.character(GEOID))
+# snc_tracts_tidy <- snc_tracts %>%
+#   mutate(GEOID = as.character(GEOID))
 
-housing_snc_tidy <- housing_snc %>%
-  mutate(GEOID2 = as.character(GEOID2))
+# housing_snc_tidy <- housing_snc %>%
+#   mutate(GEOID2 = as.character(GEOID2))
 
 # Remove extraneous variables
-snc_vars_17 <- acs_17 %>%
+rent_17 <- acs_17 %>%
   transmute(tract = GEOG_UNIT,
             med_rent = MEDGRENT)
 
-snc_17 <- inner_join(snc_vars_17, snc_tracts_tidy, by = c('tract' = 'GEOID')) # Select SNC tracts
+#snc_17 <- inner_join(snc_vars_17, snc_tracts_tidy, by = c('tract' = 'GEOID')) # Select SNC tracts
 
-snc_17_full <- left_join(snc_17, housing_snc_tidy, by = c('tract' = 'GEOID2'))
+#snc_17_full <- left_join(snc_17, housing_snc_tidy, by = c('tract' = 'GEOID2'))
 
 # Attach to polygon structure
 metro_tr <- st_read(dsn = 'Data', layer = 'Census2010TigerTract', quiet = T)
-metro_tr_data <- left_join(metro_tr, snc_17_full, by = c('GEOID10' = 'tract'))
+metro_rent <- left_join(metro_tr, rent_17, by = c('GEOID10' = 'tract'))
 
-# Filter out irrelevant tracts
-snc_tracts_geo <- metro_tr_data %>%
-  filter(!is.na(perc_poc))
+# Ensure all tracts are present
+plot(metro_rent)
+# 
+# # Filter out irrelevant tracts
+# snc_tracts_geo <- metro_tr_data %>%
+#   filter(!is.na(med_rent))
 
 # Revert to polygon
-snc_tracts_sp <- as(snc_tracts_geo, 'Spatial')
+metro_rent_sp <- as(metro_rent, 'Spatial')
+# 
+# plot(snc_tracts_sp)
 
-writeOGR(snc_tracts_sp, "Data", "Tracts_ACS_Data_Prior_to_Rent_Imputation", driver = "ESRI Shapefile")
+writeOGR(metro_rent_sp, "Data", "ACS_Prior_to_Rent_Imputation", driver = "ESRI Shapefile")
 ```
 
 # Visual exploration of data
@@ -124,7 +130,7 @@ env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Proje
 # Convert shp to layer
 arcpy.MakeFeatureLayer_management("N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Project/Data/Tracts_ACS_Data_Prior_to_Rent_Imputation.shp", "tracts_for_imp_lyr")
 
-arcpy.FillMissingValues_stpm("tracts_for_imp_lyr", "Rent_Interpolated", "med_rnt", "AVERAGE",
+arcpy.FillMissingValues_stpm("tracts_for_imp_lyr", "Rent_Interpolated_Arc", "med_rnt", "AVERAGE",
                              "K_NEAREST_NEIGHBORS", "", "", "", 8)
 
 ```
@@ -152,9 +158,8 @@ tenure_00 %>%
 snc_00 <- inner_join(x2000, snc_tr, by = c("TRACT" = "GEOID"))
 
 snc_00_tidy <- snc_00 %>%
-  select(TRACT, percentPOC2000, perSixFive2000, medHHinc2000, MedianValue2000, rent2000, builtSince00_2000) %>%
+  select(TRACT, percentPOC2000, perSixFive2000, medHHinc2000, MedianValue2000, rent2000, builtSince00_2000, Pop2000, percentRent2000, percentRes2000, perEighteen2000) %>%
   unique()
-
 
 # Process 2017 data
 
@@ -175,10 +180,16 @@ snc_acs_vars <- acs_17 %>%
             pop_total = POPTOTAL,
             age65up = AGE65UP,
             white_nh = WHITENH,
-            median_hhi = MEDIANHHI) %>%
+            median_hhi = MEDIANHHI,
+            age18under = AGEUNDER18,
+            owner_occ = OWNEROCC,
+            renter_occ = RENTEROCC) %>%
   mutate(perc_poc = (pop_total - white_nh)/pop_total*100,
-         perc_65up = age65up/pop_total*100) %>%
-  select(-pop_total, -white_nh, -age65up)
+         perc_65up = age65up/pop_total*100,
+         perc_18under = age18under/pop_total*100,
+         perc_owned = owner_occ/(owner_occ+renter_occ)*100,
+         perc_rented = renter_occ/(owner_occ+renter_occ)*100) %>%
+  select(-white_nh, -age65up)
 
 snc_17 <- inner_join(snc_acs_vars, snc_tracts_tidy, by = c('tract' = 'GEOID')) # Select SNC tracts
 
@@ -199,15 +210,15 @@ emv_tidy <- emv %>%
   mutate(Tract = as.character(Tract)) %>%
   unique()
 
-tenures <- acs_17 %>%
-  select(GEOG_UNIT, OWNEROCC, RENTEROCC) %>%
-  rename(tract = GEOG_UNIT,
-         owner_occ = OWNEROCC,
-         rent_occ = RENTEROCC) %>%
-  mutate(rent_tenure = rent_occ/(owner_occ + rent_occ),
-         owner_tenure = owner_occ/(owner_occ + rent_occ)) %>%
-  select(-rent_occ, -owner_occ) %>%
-  unique()
+# tenures <- acs_17 %>%
+#   select(GEOG_UNIT, OWNEROCC, RENTEROCC) %>%
+#   rename(tract = GEOG_UNIT,
+#          owner_occ = OWNEROCC,
+#          rent_occ = RENTEROCC) %>%
+#   mutate(rent_tenure = rent_occ/(owner_occ + rent_occ),
+#          owner_tenure = owner_occ/(owner_occ + rent_occ)) %>%
+#   select(-rent_occ, -owner_occ) %>%
+#   unique()
 
 # Join all data (excluding tenures, which don't get standardized) together
 snc_17_rent <- left_join(snc_17_acs, rent, by = c("tract" = "GEOID"))
@@ -220,6 +231,6 @@ snc_17_tidy <- snc_17_full %>%
 
 snc_00_17 <- inner_join(snc_00_tidy, snc_17_tidy, by = c("TRACT" = "tract"))
 
-write_csv(snc_00_17, "Data/2000 and 2017 Values for SNC Tracts and Variables.csv")
+write_csv(snc_00_17, "Data/2000 and 2017 Values for SNC Tracts and Variables Expanded.csv")
 
 ```
