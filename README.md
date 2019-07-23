@@ -30,7 +30,7 @@ The timepoints examined were 2000, 2010, and 2017.  While American Community Sur
 
 This project used a form of unsupervised machine learning called clustering, in which observations are classified into groups based on their distances from one another.  The form of clustering used in our analysis, known as KML, is shape-respecting; that is, if observations are changing in much the same ways, but in different magnitudes, the algorithm will favor those observations with similar magnitudes (i.e. shapes).  This means that slightly staggered changes of the same shape (for example, a tract rapidly increasing in total housing units and decreasing in their % aged 65+, but starting in different years) will be classified together.
 
-This is in contrast to other time-series clustering methods (such as PROC FASTCLUS in SAS) that favor changes that are temporally cyclical (called "dynamically evolving systems"), such as seasonal variations in weather, or annual variations in gas prices.  This type of clustering is most effectively used to define *stages* of change, rather than to define *groups* experiencing similar changes over time.  Although it is possible to combine it with change variables in order to isolate groups experiencing different trajectories in the same time period, staggered changes are less likely to be classified as similar.
+This is in contrast to other time-series clustering methods (such as PROC FASTCLUS in SAS) that favor changes that are temporally cyclical (called "dynamically evolving systems"), such as seasonal variations in weather, or annual variations in gas prices.  Proc Fastclus clustering is most effectively used to define *stages* of change, rather than to define *groups* experiencing similar changes over time.  Although it is possible to combine it with change variables in order to isolate groups experiencing different trajectories in the same time period, staggered changes are less likely to be classified as similar.
 
 ## Opening the Black Box:  Reverse-engineering the Clusters with a Multinomial Logit Model
 
@@ -44,12 +44,11 @@ The Met Council is the [Minneapolis-St. Paul metropolitan planning organization 
 
 All libraries needed are imported in the import code chunk.  Note that it's possible to reproduce creation of the Census Bureau's American Community Survey (ACS) 'percent new builds' variable from full ACS data using the commented out code chunk.  The full ACS dataset exceeds GitHub's storage limit and is therefore not available here.
 
-## Authors
+## Contributors
+
 * Dennis Farmer - **Initial work**
 * Paul Hanson - **Initial work (GIS)**
 * Nicole Sullivan - **Contributor**
 * Elizabeth Roten - **Contributor**
 * Katie Jolly - **Contributor**
-
-## Hat Tips
 * Barış Gumus-Dawes - **Project Manager**
