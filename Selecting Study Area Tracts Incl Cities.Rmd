@@ -1,0 +1,24 @@
+---
+title: "Create Dataframe of SNC Tracts"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(openxlsx)
+
+musa_sans_cities <- read.xlsx("Data/SNC tracts.xlsx")
+metro <- read_csv("Data/BlocksWithCTUs.csv")
+
+cities <- metro %>%
+  select(TR10, CTU_NAME) %>%
+  filter(CTU_NAME == "Minneapolis city" | CTU_NAME == "St. Paul city") %>%
+  select(-CTU_NAME) %>%
+  unique() %>%
+  rename(GEOID = TR10)
+
+snc_tr <- bind_rows(cities, musa_sans_cities)
+
+write_csv(snc_tr, "Data/SNC Tracts Incl Cities.csv")
+
+```

@@ -164,17 +164,6 @@ cl00_17$clusters2 <- relevel(cl00_17$clusters, ref = "A")
 test <- multinom(clusters2 ~ perc_poc + perc_65up + rent + emv + median_hhi + perc_new_bld + percentPOC2000 + perSixFive2000 + medHHinc2000 + MedianValue2000 + rent2000 + builtSince00_2000, data = cl00_17)
 
 summary(test)
-
-z <- summary(test)$coefficients/summary(test)$standard.errors
-z
-
-p <- (1 - pnorm(abs(z), 0, 1)) * 2
-p
-
-p1<- -1317.422+25*-6.566583
-p2 <- -1317.422+24*-6.566583
-
-exp(-5.895521)
 ```
 
 
@@ -254,7 +243,7 @@ cluster_snc <- cl00_17 %>%
 
 --------------------------------------------
 
-# Longitudinal Clustering for 8 timepoints, 2010-2017, on
+# Longitudinal Clustering for 9 timepoints, 2000, 2010-2017, on
 
 --------------------------------------------
 
@@ -262,15 +251,20 @@ cluster_snc <- cl00_17 %>%
 ## % 65+
 ## % 18-
 ## % Bachelor's Degree
-## % Limited English Proficiency
+## % Limited English Proficiency (not disaggregated)
 ## % No-Vehicle Households
 ## Median Household Size
-## Population
-## Population density
+## Population (Met Council estimate)
+## Total housing units (Met Council estimate)
 ## Median Household Income
 ## Reported Estimated Market Value of Home
 ## Median Rent
-## Rent Tenure
+## Rent Tenure (% renters)
+## % Race/Ethnicity (Disaggregated by Census categories:  Asian, Black, Hawaiian/Pacific Islander, Native American, Other Race, 2+ Races, Hispanic)
+## % Households residing in a mobile home
+## % in poverty (185% of federal level)
+## % 25+ with Bachelor's degree
+## % 25+ with Graduate/professional degree
 
 # Evaluate correlation between EMV computed from parcel values, years 2015 and 2017, and self-reported home values in ACS
 
@@ -292,7 +286,6 @@ library(data.table)
 ```
 
 ```{r}
-
 x00_17 <- read_csv("Data/2000 and 2017 Values for SNC Tracts and Variables.csv")
 x15 <- read_csv("Data/cleaned_variables2015.csv")
 
@@ -507,7 +500,8 @@ acs_cluster <- acs_full_t %>%
 #fwrite(acs_cluster, "Data/14-Var 2010-2017 ACS Clustering Dataset.csv")
 
 ```
-# Correct denominator for % with bachelor's, pull out grad/prof as well
+
+# Correct denominator for % with bachelor's, extract new variables & timepoints desired for addition to clustering
 
 ```{r}
 library(openxlsx)
@@ -707,7 +701,7 @@ write_csv(cluster_data, "Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv
 
 ```
 
-# Longitudinal Clustering - 25 Variables, All timepoints
+# Longitudinal Clustering - 25 Variables, 2000, 2010-2017
 
 ```{r}
 #cluster_data <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
@@ -731,8 +725,6 @@ cluster_snc <- cluster_data %>%
   separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
   dplyr::select(-underscore)
 
-#fwrite(cluster_snc, "Results/Longitudinal Clustering/8-Clusters, 2010-2017, 16-Vars, k-NN Imputation.csv")
-#write.xlsx(cluster_snc, "Results/Longitudinal Clustering/8-Clusters, All Timepoints, 25-Variables.xlsx")
 write_csv(cluster_snc, "Results/Longitudinal Clustering/8-Clusters, All Timepoints, 25-Variables.csv")
 ```
 
@@ -782,8 +774,6 @@ cluster_3_snc <- cluster_3 %>%
   separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
   dplyr::select(-underscore)
 
-#fwrite(cluster_snc, "Results/Longitudinal Clustering/8-Clusters, 2010-2017, 16-Vars, k-NN Imputation.csv")
-#write.xlsx(cluster_snc, "Results/Longitudinal Clustering/8-Clusters, All Timepoints, 25-Variables.xlsx")
 write_csv(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters, 3 Timepoints, 25-Variables.csv")
 
 ```

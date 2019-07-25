@@ -1,0 +1,158 @@
+---
+title: "Multinomial Logit Model"
+output: html_notebook
+---
+ 
+```{r}
+library(nnet)
+library(data.table)
+library(tidyverse)
+ 
+clusters <- fread("14-Var 2010-2017 ACS Clustering Dataset.csv")
+ 
+#summary(cluster_snc)
+ 
+acs_clusters <- clusters %>%
+  select(Tract, clusters, everything()) %>%
+  gather(3:110, key = "Category_time", value = "Value") %>%
+  mutate(Category_time = trimws(Category_time)) %>%
+  separate(Category_time, into = c("Variable", "Time"), sep = -5) %>%
+  spread(Variable, value = "Value") %>%
+  filter(!is.na(clusters) & !is.na(PC_LEP_AFRICA_) & !is.na(PC_LEP_HMONG_)) %>% # Remove missing cluster assignment/LEP disaggregated
+  mutate(clusters = as.factor(clusters),
+         Time = as.numeric(Time))
+ 
+summary(acs_clusters) # Check there aren't any NAs
+ 
+acs_clusters$clusters2 <- relevel(acs_clusters$clusters, ref = "A")
+ 
+cluster_mod <- multinom(clusters2 ~ MEDGRENT_ + MEDHOMEVAL_ + MEDIANHHI_ + PC_18UNDER_ + PC_65UP_ + PC_BACHELORS_ + PC_HH_MOBILE_ + PC_HH_NOVEH_ + PC_LEP_ + PC_LEP_AFRICA_ + PC_LEP_HMONG_ + PC_LEP_SPAN_ + PC_POC_ + RENT_TENURE_ + Time, data = acs_clusters)
+ 
+summary_mod <- summary(cluster_mod)
+ 
+mod_coeffs <- as.data.frame(summary_mod$coefficients)
+setDT(mod_coeffs, keep.rownames = TRUE[])
+ 
+mod_coeffs_exp <- mod_coeffs %>%
+  gather(2:17, key = "Category", value = "Coeff") %>%
+  mutate(Exp_coeff = exp(Coeff),
+         Prob = Exp_coeff/(1+Exp_coeff))
+ 
+mod_coeffs_exp %>%
+  ggplot(aes(rn, Prob, fill = rn)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~Category)
+ 
+acs_clusters %>%
+  ggplot(aes(PC_LEP_SPAN_, MEDGRENT_)) +
+  geom_point() +
+  geom_smooth(method = "loess")
+```
+ 
+```{r}
+cluster_mod_pared <- multinom(clusters2 ~ MEDGRENT_ + PC_18UNDER_ + PC_65UP_ + PC_BACHELORS_ + PC_HH_MOBILE_ + PC_HH_NOVEH_ + PC_LEP_ + PC_LEP_AFRICA_ + PC_LEP_HMONG_ + PC_LEP_SPAN_ + RENT_TENURE_ + Time, data = acs_clusters)
+ 
+summary_mod <- summary(cluster_mod_pared)
+ 
+mod_coeffs <- as.data.frame(summary_mod$coefficients)
+setDT(mod_coeffs, keep.rownames = TRUE[])
+ 
+mod_coeffs_exp <- mod_coeffs %>%
+  gather(2:14, key = "Category", value = "Coeff") %>%
+  mutate(Exp_coeff = exp(Coeff),
+         Prob = Exp_coeff/(1+Exp_coeff))
+ 
+mod_coeffs_exp %>%
+  filter(Category!="PC_BACHELORS_" & Category!="(Intercept)")%>%
+  ggplot(aes(rn, Exp_coeff, fill = rn)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~Category)
+####
+# summary(cluster_mod_pared)$coefficients/summary(cluster_mod_pared)$standard.errors
+# 
+# head(pp <- fitted(cluster_mod_pared))
+# 
+# probs_df <- data.frame(hhi = acs_clusters$MEDIANHHI_, pc18 = mean(acs_clusters$PC_18UNDER_), pc65 = mean(acs_clusters$PC_65UP_), pcbach = mean(acs_clusters$PC_BACHELORS_), pcmob = mean(acs_clusters$PC_HH_MOBILE_), pcnoveh = mean(acs_clusters$PC_HH_NOVEH_), pclep = mean(acs_clusters$PC_LEP_), pcaf = mean(acs_clusters$PC_LEP_AFRICA_), pchmong = mean(acs_clusters$PC_LEP_HMONG_), pc_span = mean(acs_clusters$PC_LEP_SPAN_), rent = mean(acs_clusters$RENT_TENURE), year = median(acs_clusters$Time))
+# 
+# predict(cluster_mod_pared, newdata = probs_df, "probs")
+ 
+preds_acs <- acs_clusters %>% select(3:17)
+ 
+i <- min(acs_clusters$RENT_TENURE_)
+myls <- list()
+max_var <- max(acs_clusters$RENT_TENURE_)
+min_var <- min(acs_clusters$RENT_TENURE_)
+diff <- max_var-min_var
+int_add <- diff/40
+ 
+while (i < max_var) {
+  int <- i + int_add
+  i <- i + int_add
+  print(int)
+}
+ 
+map(preds_acs, mean)
+```
+ 
+```{r}
+acs_range <- fread("acs_range.csv")
+rent <- fread("medgrent_pred_vars.csv")
+mobile <- fread("hhmobile_pred_vars.csv")
+mobile_hv <- fread("hhmobile_hv_pred_vars.csv")
+span_rent <- fread("span_rent_pred_vars.csv")
+ 
+newpreds <- acs_range %>%
+  gather(1:14, key = "variable", value = "value") %>%
+  separate(value, into = c("drop", "value"), sep = " ")%>%
+  select(-drop) %>%
+  mutate(value = as.numeric(value)) %>%
+  mutate(underscore = "_") %>%
+  unite(Variable, variable, underscore, sep = "") %>%
+  group_by(Variable) %>%
+  mutate(rn = row_number()) %>%
+  ungroup() %>%
+  spread(Variable, value = value) %>%
+  slice(-41) %>%
+  select(-rn)
+ 
+write_csv(newpreds, "acs_range_all_vars.csv")
+ 
+# acs_clusters_pred <- acs_clusters %>%
+#   select(-clusters, -clusters2)
+ 
+newdata_preds <- bind_cols(mobile, as_tibble(predict(cluster_mod_pared, newdata = mobile, type = "probs", se = TRUE)))
+ 
+newdata_preds %>%
+  gather(A:H, key = "cluster", value = "probability") %>%
+ggplot(aes(PC_HH_MOBILE_, probability, color = cluster)) +
+  geom_line()
+ 
+newdata_preds <- bind_cols(mobile_hv, as_tibble(predict(cluster_mod_pared, newdata = mobile_hv, type = "probs", se = TRUE)))
+ 
+newdata_preds %>%
+  gather(A:H, key = "cluster", value = "probability") %>%
+  gather(1:15, key = "variable", value = "value") %>%
+  filter(variable == "PC_HH_MOBILE_" | variable == "MEDIANHOMEVAL_") %>%
+ggplot(aes(value, probability, color = cluster)) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free")
+ 
+newdata_preds <- bind_cols(span_rent, as_tibble(predict(cluster_mod_pared, newdata = span_rent, type = "probs", se = TRUE)))
+ 
+newdata_preds %>%
+  gather(A:H, key = "cluster", value = "probability") %>%
+  gather(1:15, key = "variable", value = "value") %>%
+  group_by(variable) %>%
+  mutate(rn = row_number()) %>%
+  ungroup() %>%
+  filter(variable == "PC_LEP_SPAN_" | variable == "MEDGRENT_") %>%
+  spread(variable, value = value) %>%
+  mutate(MEDGRENT_ = ifelse(MEDGRENT_ < 1000, "rent < $1K",
+                            ifelse(MEDGRENT_ >= 1000 & MEDGRENT_ <= 1500, "rent $1K-$1.5", "rent > $1.5K"))) %>%
+ggplot(aes(PC_LEP_SPAN_, probability, color = cluster)) +
+  geom_line() +
+  facet_wrap(~MEDGRENT_, scales = "free")
+ 
+ggsave("Rent v. LEP Span example.png", width = 10, height = 6)
+```
+
