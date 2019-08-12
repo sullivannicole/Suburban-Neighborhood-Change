@@ -32,9 +32,9 @@ This project used a form of unsupervised machine learning called clustering, in 
 
 This is in contrast to other time-series clustering methods (such as PROC FASTCLUS in SAS) that favor changes that are temporally cyclical (called "dynamically evolving systems"), such as seasonal variations in weather, or annual variations in gas prices.  Proc Fastclus clustering is most effectively used to define *stages* of change, rather than to define *groups* experiencing similar changes over time.  Although it is possible to combine it with change variables in order to isolate groups experiencing different trajectories in the same time period, staggered changes are less likely to be classified as similar.
 
-## Opening the Black Box:  Reverse-engineering the Clusters with a Multinomial Logit Model
+## Opening the Black Box:  Reverse-engineering the Clusters with a k-fold Random Forest Model
 
-After clustering, it was important to our users to know how we obtained the clusters we did - what were the driving variables, and driving changes?  In order to answer this question, we "reverse-engineered" our clusters.  Similar to physical reverse engineering, in which one starts with the end-product, and duplicates it without the aid of any drawings or instructions, we started with our clusters and then used all of our variables as predictors of those clusters.  The outputs of the multinomial logit model are *probabilities*; using these probabilities, we can test new data against the model and see how an increase or decrease in a particular variable (or an interaction with another variable), or an increase or decrease in the *change* of that variable affects the probability of that tract being classified in a particular cluster.
+After clustering, it was important to our users to know how we obtained the clusters we did - what were the driving variables, and driving changes?  In order to answer this question, we "reverse-engineered" our clusters.  Similar to physical reverse engineering, in which one starts with the end-product, and duplicates it without the aid of any drawings or instructions, we started with our clusters and then used all of our variables as predictors of those clusters.  There are a variety of [random forests](https://towardsdatascience.com/random-forest-3a55c3aca46d), including out-of-bag, gradient boosting machine, or black-boosted.  In a k-fold random forest, the original dataframe is partitioned into k number of folds; the model is then "trained" on k-1 folds, and tested on 1 fold.  Testing is rotated until every fold has been treated as the test fold in one iteration.  In our case, we used 9 folds total, with 8 training folds and 1 test fold in every iteration.  We chose a k-fold random forest not only because of their high accuracy rates in prediction, but also because they rotate every fold through a test iteration, allowing us to easily extract the algorithm's probabilistic predictions for each observation (tract).
 
 ## Who We Are
 
@@ -49,6 +49,5 @@ All libraries needed are imported in the import code chunk.  Note that it's poss
 * Dennis Farmer - **Initial work**
 * Paul Hanson - **Initial work (GIS)**
 * Nicole Sullivan - **Contributor**
-* Elizabeth Roten - **Contributor**
 * Katie Jolly - **Contributor**
-* Barış Gumus-Dawes - **Project Manager**
+* Barış Gumus-Dawes - **Initial work + project manager**
