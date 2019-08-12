@@ -1,0 +1,437 @@
+---
+title: "Random Forest Predictions"
+output: html_document
+---
+
+## Reverse-Engineering Clusters:  Decision Tree + Random Forest Model
+
+# Random Forest - OOB Method with simple 80/20 train/test
+
+```{r}
+# # cluster_snc <- fread("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, RF Imp, non-MUSA wide.csv")
+# 
+# cluster_snc_rf <- cluster_snc %>% dplyr::select(-Tract)
+# 
+# # Create index dataframe to get test_index_df
+# cluster_snc_index <- cluster_snc %>%
+#   mutate(Index = row_number()) %>%
+#   dplyr::select(Index, Tract)
+# 
+# # Partition data 80/20
+# set.seed(654)
+# train_index <- createDataPartition(cluster_snc_rf$clusters, # Use DV
+#                                    p = 0.8,
+#                                    list = F,
+#                                    times = 1)
+# 
+# # Create an index to attach tract attribute to
+# train_index_df <- train_index %>% as_tibble()
+# test_index_df <- anti_join(cluster_snc_index, train_index_df, by = c("Index" = "Resample1")) %>%
+#   dplyr::select(-Index)
+# 
+# # Create training/test sets
+# clusters_train <- cluster_snc_rf[train_index, ]
+# clusters_test <- cluster_snc_rf[-train_index, ]
+# 
+# # Create random forest model
+# cluster_rf <- train(clusters ~ ., data = clusters_train,
+#                     method = "rf",
+#                     ntree = 200,
+#                     trControl = trainControl(method = "oob"))
+# 
+# # Predict test data; predict as probabilities
+# cluster_preds <- predict(cluster_rf, newdata = clusters_test)
+# cluster_probs <- predict(cluster_rf, newdata = clusters_test, type = "prob")
+# 
+# # Attach tract attribute back to probabilities
+# cluster_test_probs <- bind_cols(cluster_probs, test_index_df) %>%
+#   gather(A:H, key = "Cluster", value = "Probability")
+# 
+# fwrite(cluster_test_probs, "Results/Longitudinal Clustering/Test Data Probabilities.csv")
+```
+
+# Random Forest - K-fold Cross-validation method with 9 folds
+
+```{r}
+cluster_snc <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# Remove Tract as predictor in dataset
+cluster_snc_rf <- cluster_snc %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value)
+
+# Run model without contextual variables (variables also excluded from clustering)
+cluster_rf <- cluster_snc_rf %>% dplyr::select(-Tract, -PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017)
+
+# Create index dataframe to get test_index_df
+cluster_snc_index <- cluster_snc %>%
+  mutate(Index = row_number()) %>%
+  dplyr::select(Index, Tract)
+
+# Create folds
+cv_folds <- createFolds(cluster_rf$clusters,
+                        k = 9,
+                        list = TRUE,
+                        returnTrain = TRUE)
+
+# Check no. of observations in every fold (should be around 8/9, or 89% of the data)
+lengths(cv_folds)
+
+# Define training control
+train_control <- trainControl(method = "cv",
+                              index = cv_folds,
+                              savePredictions = 'final',
+                              classProbs = T)
+
+# Fix the parameters of the algorithm & train the model
+set.seed(238)
+kfold_model <- caret::train(clusters ~., data = cluster_rf,
+                      trControl = train_control,
+                      method = "gbm",
+                      verbose = F)
+
+# Look at predictions
+kfold_predictions <- kfold_model$pred %>%
+  as_tibble() %>%
+  gather(A:H, key = "Cluster", value = "Probability") %>%
+  dplyr::select(Cluster, Probability, rowIndex)
+
+kfold_preds_tract <- left_join(kfold_predictions, cluster_snc_index, by = c("rowIndex" = "Index"))
+
+# Check overall accuracy
+kfold_accuracy <- kfold_model$pred %>%
+  as_tibble() %>%
+  mutate(Accurate_prediction = ifelse(obs == pred, 1, 0)) %>%
+  group_by(Accurate_prediction) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(Total = sum(n),
+         Percent_accurate = n/Total)
+
+# Confusion matrix
+confusionMatrix(kfold_model$pred$pred, kfold_model$pred$obs)
+
+confux_cluster <- kfold_model$pred %>%
+  as_tibble() %>%
+  dplyr::select(pred, obs) %>%
+  mutate(pred_acc = ifelse(obs == pred, "Accurate", "Not_accurate")) %>%
+  group_by(pred_acc, obs) %>%
+  count() %>%
+  ungroup() %>%
+  spread(pred_acc, value = n) %>%
+  mutate(Accuracy_rate = Accurate/(Accurate + Not_accurate)*100)
+
+fwrite(kfold_preds_tract, "Results/Longitudinal Clustering/RF Cluster Predictions by Tracts.csv")
+
+cluster_snc_rf %>%
+  head()
+  
+```
+
+# Get pdp values for all predictors using pdp package
+
+```{r}
+library(pdp)
+
+generate_pd_values <- function(var) {
+
+pdvalues <- pdp::partial(object = kfold_model,
+                         pred.var = var,
+                         prob = T,
+                         type = "classification")
+
+colnames(pdvalues) <- list(var, paste(var, "_yhat"))
+
+assign(paste("pd", var, sep = "_"), pdvalues, envir = .GlobalEnv)
+
+}
+
+bach <- generate_pd_values("PC_BACHELORS_2000")
+
+arg <- as.list(colnames(clusters_train))
+names(arg) <- rep("var", length(arg))
+
+
+purrr::map(arg, generate_pd_values)
+
+#################
+library(e1071)
+# Run multinom without contextual variables (variables also excluded from clustering)
+cluster_mod <- cluster_snc_rf %>%
+  dplyr::select(-Tract, -PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017) %>%
+  mutate(clusters = as.factor(clusters))
+
+cluster_svm <- svm(clusters~.,
+                   data = cluster_mod,
+                   probability = T)
+
+pd <- NULL
+for (i in 1:2) {
+  tmp <- pdp::partial(object = clusters_svm,
+                 pred.var = "MEDHOMEVAL_2017",
+                 grid.resolution = 101,
+                 which.class = i,
+                 progress = "text",
+                 contour = T,
+                 prob = T)
+  
+  pd <- rbind(pd, cbind(tmp, Cluster = levels(as.factor(cluster_snc_rf$clusters))[i]))
+  
+}
+
+ggplot(pd, aes(x = Petal.Width, y = Petal.Length, z = yhat, fill = yhat)) +
+geom_tile() +
+geom_contour(color = "white", alpha = 0.5) +
+scale_fill_distiller(name = "Centered\nlogit", palette = "Spectral") +
+theme_bw() +
+facet_grid(~ Species)
+
+ggplot(pd, aes(MEDHOMEVAL_2017, yhat, color = Cluster)) +
+  geom_line() +
+  facet_wrap(~Cluster)
+
+iris.svm <- svm(Species ~., 
+                data = iris,
+                kernel = "radial",
+                gamma = 0.75,
+                cost = 0.25,
+                probability = T)
+
+pd <- NULL
+for (i in 1:3) {
+  tmp <- partial(iris.svm, pred.var = "Petal.Width",
+                 which.class = i,
+                 grid.resolution = 101,
+                 progress = "text")
+  
+  pd <- rbind(pd, cbind(tmp, Species = levels(iris$Species)[i]))
+}
+
+ggplot(pd, aes(x = Petal.Width, y = Petal.Length, z = yhat, fill = yhat)) +
+geom_tile() +
+geom_contour(color = "white", alpha = 0.5) +
+scale_fill_distiller(name = "Centered\nlogit", palette = "Spectral") +
+theme_bw() +
+facet_grid(~ Species)
+
+ggplot(pd, aes(MEDHOMEVAL_2017, yhat, color = Cluster)) +
+  geom_line()
+
+
+```
+
+# Predictions from rf model
+
+```{r}
+cluster_snc <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# Remove Tract as predictor in dataset
+cluster_snc_rf <- cluster_snc %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value)
+
+# Run model without contextual variables (variables also excluded from clustering)
+cluster_rf <- cluster_snc_rf %>% dplyr::select(-Tract, -PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017)
+
+
+# Run model without contextual variables (variables also excluded from clustering)
+rf_test <- cluster_snc_rf %>% dplyr::select(-Tract, -PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -clusters)
+# Create index dataframe to get test_index_df
+cluster_snc_index <- cluster_snc %>%
+  mutate(Index = row_number()) %>%
+  dplyr::select(Index, Tract)
+
+# Define training control
+train_control <- trainControl(method = "oob",
+                              classProbs = T)
+
+# Fix the parameters of the algorithm & train the model
+set.seed(238)
+oob_model <- caret::train(clusters ~., data = cluster_rf,
+                      trControl = train_control,
+                      method = "rf",
+                      verbose = F)
+
+partial_dependence <- function(predictor) {
+  
+  var <- ensym(predictor)
+  x_s <- dplyr::select(rf_test, !!var)
+  x_c <- dplyr::select(rf_test, -!!var)
+  grid <- crossing(x_c, x_s)
+
+rf_preds <- function(object, newdata) {
+  newdata <- as_tibble(newdata)
+  class_probs <- predict(object, newdata, type = "prob")
+  bind_cols(newdata, as_tibble(class_probs))
+}
+
+cluster_rf_preds <- rf_preds(oob_model, grid)
+
+pd <- cluster_rf_preds %>%
+  dplyr::select(!!var, A:H) %>%
+  gather(A:H, key = "Cluster", value = "Probability") %>%
+  group_by(Cluster, !!var) %>%
+  summarize(marginal_prob = mean(Probability))
+}
+
+hhmobile <- partial_dependence("PC_HH_MOBILE_2000")
+
+pdp_values <- colnames(clusters_test)[1:72] %>% 
+  map_dfr(partial_dependence)
+  
+all_dependencies <- pdp_values %>%
+  dplyr::select(Cluster, marginal_prob, everything()) %>%
+  gather(3:length(pdp_values), key = "Predictor", value = "Predictor_value")
+
+fwrite(all_dependencies, "Results/Longitudinal Clustering/Partial-Dependency RF Values.csv")
+
+hhmobile %>%
+  ggplot(aes(PC_HH_MOBILE_2000, marginal_prob, color = Cluster, group = Cluster)) +
+  geom_line(aes(group = Cluster))
+
+fwrite(bach, "Test probs.csv")
+names(grid)
+```
+
+# Predictions from logit model
+
+```{r}
+cluster_3_snc <- fread("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.csv")
+
+cluster_snc <- cluster_3_snc %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value)
+
+# Run multinom without contextual variables (variables also excluded from clustering)
+cluster_multinom <- cluster_snc %>% dplyr::select(-Tract, -PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017)
+
+multinom_fit <- multinom(clusters ~ ., cluster_multinom)
+
+partial_dependence <- function(predictor) {
+  
+  var <- ensym(predictor)
+  x_s <- dplyr::select(cluster_multinom, !!var)
+  x_c <- dplyr::select(cluster_multinom, -!!var)
+  grid <- crossing(x_s, x_c)
+
+multinom.augment <- function(object, newdata) {
+  newdata <- as_tibble(newdata)
+  class_probs <- predict(object, newdata, type = "prob")
+  bind_cols(newdata, as_tibble(class_probs))
+}
+
+cluster_rf_preds <- multinom.augment(multinom_fit, grid)
+
+pd <- cluster_rf_preds %>%
+  dplyr::select(!!var, A:H) %>%
+  gather(A:H, key = "Cluster", value = "Probability") %>%
+  group_by(Cluster, !!var) %>%
+  summarize(marginal_prob = mean(Probability))
+}
+
+cluster_pdp <- cluster_multinom %>% dplyr::select(-clusters)
+
+pdp_values <- colnames(cluster_pdp)[1:length(cluster_pdp)] %>% 
+  map_dfr(partial_dependence)
+  
+all_dependencies <- pdp_values %>%
+  dplyr::select(Cluster, marginal_prob, everything()) %>%
+  gather(3:length(pdp_values), key = "Predictor", value = "Predictor_value")
+
+pdps_year <- all_dependencies %>%
+  separate(Predictor, into = c("Predictor", "Year"), sep = -4)
+
+fwrite(all_dependencies, "Results/Longitudinal Clustering/Partial-Dependency Values.csv")
+fwrite(pdps_year, "Results/Longitudinal Clustering/Partial-Dependency Values by Year.csv")
+
+names(cluster_3_snc)
+cluster_snc %>%
+  head()
+```
+
+# Predict values using iml package
+
+```{r}
+# library(iml)
+# 
+# X <- clusters_train %>%
+#   select(-clusters) %>%
+#   as.data.frame()
+# 
+# predictor <- Predictor$new(cluster_rf, data = X, y = clusters_train$clusters)
+# str(predictor)
+# 
+# pdp_obj <- Partial$new(predictor, feature = "PC_18UNDER_2000")
+# 
+# pdp_obj$plot()
+# 
+# names(clusters_train)
+```
+
+
+```{r}
+# Confusion matrix
+confusionMatrix(data = cluster_preds, as.factor(clusters_test$clusters))
+
+ggplot(cluster_rf)
+
+# Look at an individual tree
+randomForest::getTree(cluster_rf$finalModel, labelVar = TRUE)
+
+# Variable importance plot
+randomForest::varImpPlot(cluster_rf$finalModel)
+
+var_imp <- randomForest::varImpPlot(cluster_rf$finalModel) # save plot
+
+# this part just creates the data.frame for the plot part
+var.imp <- as.data.frame(var_imp)
+var.imp$varnames <- rownames(var.imp) # row names to column
+rownames(var.imp) <- NULL # erase rownames
+
+# Plot
+# library(plotly) 
+# gini_bar <- ggplot(var.imp, aes(reorder(varnames, MeanDecreaseGini), MeanDecreaseGini, fill = cut_interval(MeanDecreaseGini, n = 9))) + 
+#   geom_bar(stat = "identity") +
+#   scale_fill_brewer(palette = "RdPu") +
+#   labs(y = "Mean Decrease in Gini",
+#        x = "Variable") +
+#   coord_flip() +
+#   theme(legend.position = "bottom")
+# 
+# ggplotly(gini_bar)
+# 
+# gini_lollipop <- ggplot(var.imp, aes(x = reorder(varnames, MeanDecreaseGini), y = MeanDecreaseGini, color = cut_interval(var.imp$MeanDecreaseGini, n = 9))) + 
+#   geom_point() +
+#   geom_segment(aes(x = varnames,xend = varnames,y = 0, yend = var.imp$MeanDecreaseGini)) +
+#   scale_color_discrete(cut_interval(var.imp$MeanDecreaseGini, n = 9)) +
+#   scale_color_brewer(palette = "RdPu") +
+#   coord_flip() +
+#   theme(legend.position = "bottom")
+# 
+# ggplotly(gini_lollipop)
+# 
+# var_imp_yr <- var.imp %>%
+#   separate(varnames, into = c("Variable", "Year"), sep = -4) %>%
+#   separate(Variable, into = c("Variable", "drop"), sep = -1) %>%
+#   dplyr::select(-drop)
+
+# fwrite(var_imp_yr, "Results/Longitudinal Clustering/8-Cluster Gini Values.csv")
+```
+
+```{r}
+set.seed(123)
+cluster_rf_knn <- train(clusters ~ ., data = cluster_snc_rf,
+                        method = "knn", 
+                        tuneGrid = expand.grid(k = 1:20),
+                        trControl = trainControl(method = "LGOCV",
+                                                 p = 0.8,
+                                                 number = 1,
+                                                 savePredictions = T))
+
+head(cluster_rf_knn$pred)
+
+cluster_rf_knn$finalModel$confusion
+
+plot(cluster_rf_knn)
+
+```

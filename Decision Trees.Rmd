@@ -1,0 +1,64 @@
+---
+title: "Decision Trees"
+output: html_document
+---
+
+```{r}
+cluster_snc <- fread("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, RF Imp, non-MUSA wide.csv")
+
+# No pruning
+tree_wide_data <- cluster_snc %>%
+  dplyr::select(-Tract)
+
+# Default params, not pruning
+tree_wide <- ctree(clusters ~ ., data = tree_wide_data)
+
+png("Results/Longitudinal Clustering/Decision Tree Wide No Pruning.png", width = 6000, height = 2000)
+plot(tree_wide)
+
+# misclassification/error rate
+# check whether predicted values match actual values, calculate the
+# mean of that boolean vector, then subtract from 1 to get the error
+# rate (original value identifies accuracy rate)
+1 - mean(predict(tree_wide) == cluster_snc$clusters, na.rm = T)
+
+```
+
+```{r}
+# Pruning with minbucket
+tree_wide_data <- cluster_snc %>%
+  dplyr::select(-Tract)
+
+# Default params, not pruning
+tree_wide <- ctree(clusters ~ ., data = tree_wide_data, control = ctree_control(minbucket = 50))
+
+png("Results/Longitudinal Clustering/Decision Tree Wide Pruning minbucket.png", width = 6000, height = 2000)
+plot(tree_wide)
+
+# misclassification/error rate
+# check whether predicted values match actual values, calculate the
+# mean of that boolean vector, then subtract from 1 to get the error
+# rate (original value identifies accuracy rate)
+1 - mean(predict(tree_wide) == cluster_snc$clusters, na.rm = T) # lower accuracy than without pruning, but lower number of terminal nodes
+
+```
+
+```{r}
+# Pruning with minsplit
+tree_wide_data <- cluster_snc %>%
+  dplyr::select(-Tract)
+
+# Default params, not pruning
+tree_wide <- ctree(clusters ~ ., data = tree_wide_data, control = ctree_control(nmax = c(yx = 8, z = Inf),
+                                                                                minbucket = 50))
+
+png("Results/Longitudinal Clustering/Decision Tree Wide Pruning nmax and minbucket.png", width = 6000, height = 2000)
+plot(tree_wide)
+
+# misclassification/error rate
+# check whether predicted values match actual values, calculate the
+# mean of that boolean vector, then subtract from 1 to get the error
+# rate (original value identifies accuracy rate)
+1 - mean(predict(tree_wide) == cluster_snc$clusters, na.rm = T)
+
+```

@@ -1,0 +1,34 @@
+---
+title: "New Builds"
+output: html_notebook
+---
+
+```{r}
+library(R.utils)
+library(data.table)
+library(tidyverse)
+```
+
+# 2017
+
+```{r}
+#gunzip('Data/acs20175_all.csv.gz', remove = F) # Unzip compressed gz file, don't remove compressed file
+housing_17 <- fread("Data/acs20175_all.csv")
+
+# New builds
+
+new_builds <- housing_17 %>%
+  select(B25034e1, B25034e2, B25034e3, B25034e4, B25034e5, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
+  mutate(Total_HU_2017 = B25034e1, # Total housing units in existence in 2017
+         HU_2010_2017 = B25034e3 + B25034e2,  # Units built 2010 to 2013, units built 2014 or later
+         HU_2000_2009 = B25034e4,
+         HU_1990_1999 = B25034e5) %>%
+   filter(SUMLEV == 150 & TCFLAG == 1) %>% # Summary level of geography = bg & contained within Twin Cities
+   mutate(PC_NEW_HU_2000 = HU_1990_1999/(Total_HU_2017-HU_2010_2017-HU_2000_2009),
+          PC_NEW_HU_2010 = HU_2000_2009/(Total_HU_2017-HU_2010_2017),
+          PC_NEW_HU_2017 = HU_2010_2017/Total_HU_2017) %>%
+   select(GEOID, GEOID2, GEONAME, PC_NEW_HU_2000, PC_NEW_HU_2010, PC_NEW_HU_2017)
+
+fwrite(new_builds, "Data/percent_new_builds_bg.csv")
+
+```

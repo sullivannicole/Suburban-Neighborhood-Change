@@ -39,7 +39,7 @@ Parcel data development contains a number of very large files that exceed GitHub
 
 # Percent New Builds
 
-Below is code for pulling the % new builds from Matt's 5-year ACS data file with all variables - CommDev/Research/Research/Census/ACS/Excel (zipped 'all' file); this file is too large to commit to GitHub, so it is not contained here.
+Below is code for pulling the % new builds from Matt's 5-year ACS data file with all variables - CommDev/Research/Research/Census/ACS/Excel (zipped 'all' file).
 
 ```{r}
 housing_data <- fread('Data/acs20175_all.csv')

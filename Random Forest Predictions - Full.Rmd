@@ -1,0 +1,316 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(openxlsx)
+library(tidyverse)
+library(data.table)
+library(caret)
+library(rlang)
+library(nnet)
+library(randomForest)
+```
+
+# Create new data in order to test how a change in a variable affects its odds of being classified in a particular cluster
+
+```{r}
+clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# Data to create folds & to run model on
+cluster_rf <- clusters %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value) %>%
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -Tract)
+
+# Dataset to create new data from
+cluster_preds <- cluster_rf %>%
+  dplyr::select(-clusters)
+
+### MODEL USED IN PREDICTION FUNCTION ###---------------------
+
+# Create folds
+cv_folds <- createFolds(cluster_rf$clusters,
+                        k = 9,
+                        list = TRUE,
+                        returnTrain = TRUE)
+
+# Check no. of observations in every fold (should be around 8/9, or 89% of the data)
+lengths(cv_folds)
+
+# Define training control
+train_control <- trainControl(method = "cv",
+                              index = cv_folds,
+                              savePredictions = 'final',
+                              classProbs = T)
+
+# Fix the parameters of the algorithm & train the model
+set.seed(238)
+kfold_model <- caret::train(clusters ~., data = cluster_rf,
+                      trControl = train_control,
+                      method = "gbm",
+                      verbose = F)
+
+### PREDICTION FUNCTION ###-------------------------------------------
+rf_predictions <- function(predictor, intervals = 30) {
+
+  var <- ensym(predictor)
+int <- intervals
+  
+# Create new data predictor data
+create_new_data <- function(var, int) {
+  
+variable <- cluster_preds %>% dplyr::select(!!var)
+  
+var <- names(variable) # Assign name of variable to a character vector
+i <- min(variable) # Start off addition with minimum of variable
+a <- 1 # Start filling output vector (myls) with the first slot
+myls <- vector("list", length = int) # Create output to be filled
+
+int_add <- (max(variable) - min(variable))/int # Cut variable range into 40 equal pieces
+
+while (i < max(variable)) {
+  
+  myls[[a]] <- i + int_add
+  i <- i + int_add
+  a <- a + 1
+}
+newdata <<- as.data.frame(do.call("rbind", myls))
+colnames(newdata) <<- var  # Rename column to name of variable
+assign(paste(var, sep = "_"), newdata, envir = .GlobalEnv) # Rename dataframe to name of variable
+}
+
+# Use function to create values along range of variable
+x_s <- create_new_data(predictor, int)
+
+# Create grid of new data
+#means <- map_df(cluster_preds, mean) # Find mean
+#grid <- crossing(means %>% dplyr::select(-!!var), x_s)
+x_c <- cluster_rf %>% dplyr::select(-!!var)
+grid <- crossing(x_s, x_c)
+
+newdata_preds <- bind_cols(grid, as_tibble(predict(multinom(clusters~., data = cluster_rf), newdata = grid, type = "prob", se = TRUE, contour = T)))
+
+preds <- newdata_preds %>%
+  dplyr::select(A:H, !!var) %>%
+  gather(A:H, key = "Cluster", value = "Probability") %>%
+  group_by(Cluster, !!var) %>%
+  mutate(Marginal_prob = mean(Probability)) %>%
+  dplyr::select(Cluster, !!var, Marginal_prob) %>%
+  unique()
+}
+
+rent_preds <- rf_predictions("PC_POC_2000")
+
+pdp_values <- colnames(clusters_test)[1:72] %>% 
+  map_dfr(partial_dependence)
+  
+# all_dependencies <- pdp_values %>%
+#   dplyr::select(Cluster, marginal_prob, everything()) %>%
+#   gather(3:length(pdp_values), key = "Predictor", value = "Predictor_value")
+
+fwrite(preds, "test probs.csv")
+fwrite(rent_preds, "rent test probs.csv")
+
+cluster_rf %>%
+  dplyr::select(PC_POC_2000, clusters) %>%
+  group_by(clusters) %>%
+  summarize(av = mean(PC_POC_2000))
+```
+
+# Try our hand at partial plots (as probabilities) from oob random forest
+
+```{r}
+cluster_snc <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+cluster_snc_rf <- cluster_snc %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value) %>%
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -Tract)
+
+# Create index dataframe to get test_index_df
+cluster_snc_index <- cluster_snc %>%
+  mutate(Index = row_number()) %>%
+  dplyr::select(Index, Tract)
+
+# Partition data 80/20
+set.seed(654)
+train_index <- createDataPartition(cluster_snc_rf$clusters, # Use DV
+                                   p = 0.8,
+                                   list = F,
+                                   times = 1)
+
+# Create an index to attach tract attribute to
+train_index_df <- train_index %>% as_tibble()
+test_index_df <- anti_join(cluster_snc_index, train_index_df, by = c("Index" = "Resample1")) %>%
+  dplyr::select(-Index)
+
+# Create training/test sets
+clusters_train <- cluster_snc_rf[train_index, ]
+clusters_test <- cluster_snc_rf[-train_index, ]
+
+# Create random forest model
+cluster_rf <- train(clusters ~ ., data = clusters_train,
+                    method = "rf",
+                    ntree = 200,
+                    trControl = trainControl(method = "oob"))
+
+
+library(pdp)
+
+partial_dependency_caret <- function(v) {
+  
+  v <<- v
+  pd_values <- NULL
+  clusters <- c("A", "B", "C", "D", "E", "F", "G", "H")
+
+  for (i in clusters) {
+
+    pd_values[[i]] <- pdp::partial(cluster_rf,
+                         pred.var = v,
+                         which.class = i,
+                         prob = T,
+                         plot = F)
+    
+  }
+
+  pdp <- as.data.frame(pd_values)
+  
+  pdp_df <- pdp %>%
+    gather(A.yhat, B.yhat, C.yhat, D.yhat, E.yhat, F.yhat, G.yhat, H.yhat, key = "Cluster", value = "Prob") %>%
+    gather(1:8, key = "Variable", value = "Variable_value") %>%
+    separate(Variable, into = c("Drop", "Variable"), sep = "\\.") %>%
+    dplyr::select(-Drop)
+  
+}
+
+rf_preds <- cluster_snc_rf %>%
+  dplyr::select(-clusters)
+
+pdp_vars <- colnames(rf_preds)
+
+pdp_df <- map(pdp_vars, partial_dependency_caret)
+
+all_dependencies <- do.call("rbind", pdp_df)
+
+# fwrite(all_dependencies, "Results/Longitudinal Clustering/Partial Dependency Values from caret package.csv")
+```
+
+# Use randomForest package and partialPlot function
+
+caret's partial plots are giving same prediction for every predictor.  Try using the randomForest's partialPlot() function (this works, but doesn't return probabilities).
+
+```{r}
+clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# Data to create folds & to run model on
+rf_data <- clusters %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value) %>%
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -Tract)
+
+rf <- randomForest(as.factor(clusters) ~., data = rf_data)
+
+#############
+
+pred_vars <- rf_data %>%
+  dplyr::select(-clusters)
+
+predictors <- colnames(pred_vars)
+
+partial_dependency <- function(v) {
+  
+  v <<- v
+  pd_values <- NULL
+  clusters <- c("A", "B", "C", "D", "E", "F", "G", "H")
+
+  for (i in clusters) {
+
+    pd_values[[i]] <- as_tibble(partialPlot(rf,
+                         pred.data = rf_data,
+                         x.var = predictors[v],
+                         n.pt = 100,
+                         which.class = i,
+                         plot = F))
+    
+}
+
+pdp <<- as.data.frame(pd_values)
+
+pdp_tidy <<- pdp %>%
+  gather(A.x, B.x, C.x, D.x, E.x, F.x, G.x, H.x, key = "Cluster", value = "X") %>%
+  gather(A.y, B.y, C.y, D.y, E.y, F.y, G.y, H.y, key = "Cluster", value = "Y") %>%
+  separate(Cluster, into = c("Cluster", "Axis"), sep = "\\.") %>%
+  dplyr::select(-Axis) %>%
+  unique() %>%
+  mutate(Variable = predictors[v])
+}
+
+all_dependencies <- map(c(1:length(predictors)), partial_dependency)
+
+pdp_df <- bind_rows(all_dependencies)
+
+
+# fwrite(pdp_df, "Results/Longitudinal Clustering/Partial Dependency Values from randomForest packages.csv")
+```
+
+```{r}
+library(edarf)
+
+clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# Data to create folds & to run model on
+rf_data <- clusters %>%
+  mutate(Value = as.numeric(Value)) %>%
+  unite(Predictor, Variable, Year) %>%
+  spread(Predictor, value = Value) %>%
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -Tract) %>%
+  mutate(clusters = as.factor(clusters))
+
+# Random forest model, downsampling most frequent class to give higher balanced accuracy
+set.seed(223)
+min <- min(table(rf_data$clusters))
+
+fit_rf <- randomForest(data = rf_data, 
+                       clusters~.,
+                       ntree = 500,
+                       importance = TRUE,
+                       sampsize = c(min))
+
+# Add predictions to dataframe
+df_rf <- rf_data %>% 
+  mutate(predicted = predict(fit_rf))
+
+# Find top predictors
+imp_vars <- data.frame(importance(fit_rf, scale = FALSE, type = 1))
+
+# Plot mean decreased accuracy
+imp_df <- imp_vars %>% 
+  mutate(names = rownames(imp_vars)) %>% 
+  arrange(desc(MeanDecreaseAccuracy))
+
+imp_df %>% 
+  top_n(10, MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(names, MeanDecreaseAccuracy), y = MeanDecreaseAccuracy)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Variable Importance, Cluster Dataset",
+       subtitle = "Random Forests (N = 500)",
+       x= "",
+       y= "Mean Decrease in Accuracy",
+       caption = " ") +
+  theme(plot.caption = element_text(face = "italic"))
+
+# Save top predictor names as character vector
+nm <- as.character(imp_df$names)[1:10]
+
+# Get partial depedence values for top predictors
+pd_df <- partial_dependence(fit = fit_rf,
+                         vars = nm,
+                         data = df_rf,
+                         n = c(100, 200))
+
+# Plot partial dependence using edarf
+plot_pd(pd_df)
+
+```

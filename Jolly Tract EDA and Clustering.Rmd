@@ -1,0 +1,585 @@
+---
+title: "Jolly Tracts"
+output: html_notebook
+---
+
+------------------------
+
+# Longitudinal Clustering using Jolly tracts for 2000, 2010 and 2017
+
+-------------------------
+
+```{r}
+library(tidyverse)
+library(kml3d) # for longitudinal clustering
+library(stringr) # for num_extract algorithm
+library(MASS) # for AIC
+library(GGally) # for correlation matrix
+library(extrafont) # for fonts for plots
+library(pander) # to tidy model output
+library(openxlsx)
+library(sf) # for geospatial commands
+library(nngeo) # for nearest neighbor computation
+library(nnet) # for neural nets in multinomial logit
+library(data.table)
+library(R.utils) # to unzip gz compressed file
+library(censusapi) # obtain 2000 data from Census API
+```
+
+# Import housing unit data at the block group level; convert to new builds
+
+```{r}
+#gunzip('Data/acs20175_all.csv.gz', remove = F) # Unzip compressed gz file, don't remove compressed file
+housing_17 <- fread("Data/acs20175_all.csv")
+
+# New builds
+
+new_builds <- housing_17 %>%
+  select(B25034e1, B25034e2, B25034e3, B25034e4, B25034e5, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
+  mutate(Total_HU_2017 = B25034e1, # Total housing units in existence in 2017
+         HU_2010_2017 = B25034e3 + B25034e2,  # Units built 2010 to 2013, units built 2014 or later
+         HU_2000_2009 = B25034e4,
+         HU_1990_1999 = B25034e5) %>%
+   filter(SUMLEV == 150 & TCFLAG == 1) %>% # Summary level of geography = bg & contained within Twin Cities
+   mutate(PC_NEW_HU_2000 = HU_1990_1999/(Total_HU_2017-HU_2010_2017-HU_2000_2009),
+          PC_NEW_HU_2010 = HU_2000_2009/(Total_HU_2017-HU_2010_2017),
+          PC_NEW_HU_2017 = HU_2010_2017/Total_HU_2017) %>%
+   select(GEOID, GEOID2, GEONAME, PC_NEW_HU_2000, PC_NEW_HU_2010, PC_NEW_HU_2017)
+
+#fwrite(new_builds, "Data/percent_new_builds_bg.csv")
+
+```
+
+# Take a look at Census API to get 2000 variables
+
+```{r}
+apis <- listCensusApis()
+
+# Different ways of finding year 2000 files
+apis %>%
+  mutate(Year_2000 = str_detect(title, "2000")) %>%
+  filter(Year_2000 == TRUE)
+
+apis %>%
+  filter(vintage == 2000)
+
+# See which summary file is the file needed
+apis %>%
+  filter(title == "2000 Decennial: Summary File 1" | title == "2000 Decennial: Summary File 3")
+
+variables_2000_sf1 <- listCensusMetadata(name = "sf1", vintage = 2000, type = "variables")
+
+variables_2000 <- listCensusMetadata(name = "sf3", vintage = 2000, type = "variables")
+
+# Search variables by label
+find_variable <- function(search_term) {
+variables_2000 %>%
+  mutate(Find_term = str_detect(label, search_term)) %>%
+  filter(Find_term == TRUE)
+}
+
+find_variable("age")
+
+# Search variables by concept
+find_concept <- function(search_term) {
+  variables_2000 %>%
+    mutate(Find_term = str_detect(concept, search_term)) %>%
+    filter(Find_term == T)
+}
+
+find_concept("Race \\[8")
+find_concept("Age")
+
+# Variable crosswalk (by name)
+#P006003 - Black
+#P006005 - Asian
+#P006006 - Native Hawaiian/Pacific Islander
+#P006007 - Other race
+#P006001 - Total population
+#P006002 - White
+#P006004 - American Indian/Alaskan Native
+find_variable("years")
+```
+
+## Import data
+
+```{r}
+x2000 <- fread("Data/CEN2000_2010boundaries2.csv")
+x2010 <- read.xlsx("Data/Block group data/acs20105_bg.xlsx")
+x2017 <- read.xlsx("Data/Block group data/acs20175_bg.xlsx")
+jolly_ids <- read_csv("Data/Block group data/jolly_tract_geoids.csv")
+jolly_medians <- fread("Data/Block group data/medians_jollytract.csv")
+sa <- read.xlsx("Data/Block group data/estimates_V2018_bg.xlsx")
+
+```
+
+## Aggregate 2000 block group data to jolly tracts
+
+```{r}
+
+# Get gross values for each block group - 2000
+census_2000 <- x2000 %>%
+  dplyr::select(noquote(order(colnames(x2000)))) %>%
+  dplyr::select(-GROSSRENT, -HHMEDVAL, -HHMEDINC, -PC_LEPSPAN) %>%
+  gather(8:22, key = "Pc_cat", value = "Value_pc") %>% # Collect percentage columns
+  mutate(Value_gross = ifelse(Pc_cat == "PC_BACHELORS" | Pc_cat == "PC_GRADPROF", Value_pc * POPOVER25, Value_pc * TOTALPOP),
+         Renters = RENT_TENURE * OCC_HOUSING) %>%
+  dplyr::select(-Value_pc) %>%
+  spread(Pc_cat, value = Value_gross) %>%
+  dplyr::select(-AVGHHSIZE, -RENT_TENURE) %>% # remove categories that aren't summed
+  mutate(GEOID10 = as.character(GEOID10))
+
+# Add Jolly tract ID for aggregation
+jolly_ids_char <- jolly_ids %>% mutate(GEOID_BG = as.character(GEOID_BG))
+jolly_00_attr <- left_join(census_2000, jolly_ids_char, by = c("GEOID10" = "GEOID_BG"))
+
+# Aggregate block groups to Jolly tracts by summing - 2000
+options(scipen = 999)
+jolly_00_sum <- jolly_00_attr %>%
+  dplyr::select(-GEOID10, -GEOID_TR) %>%
+  filter(!is.na(RID) & RID != -999) %>% # Get rid of block groups not in the study area, including Bethel dorms
+  dplyr::select(RID, everything()) %>%
+  gather(2:24, key = "Category", value = "Value") %>%
+  group_by(RID, Category) %>%
+  mutate(Value_summed = sum(Value, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::select(-Value) %>%
+  unique() %>%
+  spread(Category, value = Value_summed)
+
+jolly_00_perc <- jolly_00_sum %>%
+  dplyr::select(RID, OCC_HOUSING, TOTALPOP, POPOVER25, HOUSEHOLDS, everything()) %>%
+  gather(6:length(jolly_00_sum), key = "Category", value = "Value") %>%
+  mutate(Category_prefix = substring(Category, 1, 2)) %>%
+  mutate(Percentage_value = ifelse(Category_prefix == "PC" & Category != "PC_BACHELORS" & Category != "PC_GRADPROF", Value/TOTALPOP * 100,
+                                   ifelse(Category == "HISPOP", Value/TOTALPOP * 100,
+                                          ifelse(Category == "PC_BACHELORS" | Category == "PC_GRADPROF", Value/POPOVER25 *100,
+                                                 ifelse(Category == "Renters", Value/OCC_HOUSING * 100,
+                                                        ifelse(Category == "HHMOBILE", Value/HOUSEHOLDS *100, Value)))))) %>%
+  dplyr::select(RID, Percentage_value, TOTALPOP, Category) %>%
+  mutate(Year = 2000) %>%
+  unite(Category_yr, Category, Year) %>%
+  mutate(Percentage_value = ifelse(RID == -999, 0, Percentage_value)) %>% # Block group containing Bethel dorms is all zeros and returns NAs upon division; 
+  spread(Category_yr, value = Percentage_value) %>%
+  rename(POPTOTAL_EST_2000 = TOTALPOP,
+         HUTOTAL_EST_2000 = HOUSING_UNITS_2000,
+         RENT_TENURE_2000 = Renters_2000,
+         PC_HISPPOP_2000 = HISPOP_2000,
+         PC_HH_NOVEH_2000 = PC_HHNOVEH_2000,
+         PC_HH_MOBILE_2000 = HHMOBILE_2000)
+
+# Gross values for 2010
+census_2010 <- x2010 %>%
+  filter(TCFLAG == 1) %>%
+  dplyr::select(GEOID2, POPTOTAL, AGEUNDER18, AGE65UP, WHITENH, BLACKNH, AMINDNH, ASIANNH, PACIFICNH, OTHERNH, MULTRACENH, HISPPOP, NOTHISPPOP, POPOVER25, BACHELORS, GRADPROF, LEP, POV185RATE, RENTEROCC, OWNEROCC, HHMOBILE, HH_NOVEH, HHTOTAL) %>%
+  mutate(POP_POV = POV185RATE * POPTOTAL) %>%
+  dplyr::select(-POV185RATE)
+
+# Add Jolly RID attribute for aggregation
+jolly_10_attr <- left_join(census_2010, jolly_ids_char, by = c("GEOID2" = "GEOID_BG"))
+
+# Aggregate block groups to Jolly tracts by summing
+jolly_10_sum <- jolly_10_attr %>%
+  filter(!is.na(RID) & RID != -999) %>%
+  dplyr::select(-GEOID_TR) %>%
+  dplyr::select(GEOID2, RID, everything()) %>%
+  gather(3:(length(jolly_10_attr)-1), key = "Census_category", value = "Value") %>%
+  group_by(RID, Census_category) %>%
+  mutate(Value_summed = sum(Value, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::select(-GEOID2, -Value) %>%
+  unique() %>%
+  spread(Census_category, value = Value_summed)
+
+# Convert sums to percentages where applicable
+jolly_10_perc <- jolly_10_sum  %>%
+  dplyr::select(RID, POPOVER25, POPTOTAL, HHTOTAL, RENTEROCC, OWNEROCC, NOTHISPPOP, everything()) %>%
+  gather(8:length(jolly_10_sum), key = "Census_category", value = "Value") %>%
+  mutate(PC = ifelse(Census_category == "BACHELORS" | Census_category == "GRADPROF", Value/POPOVER25 * 100,
+                     ifelse(Census_category == "HH_NOVEH" | Census_category == "HHMOBILE", Value/HHTOTAL * 100, Value/POPTOTAL * 100))) %>%
+  mutate(RENT_TENURE_2010 = RENTEROCC/(RENTEROCC + OWNEROCC) * 100,
+         PC_POC_2010 = (POPTOTAL - NOTHISPPOP)/POPTOTAL * 100) %>%
+  dplyr::select(-POPTOTAL, -POPOVER25, -HHTOTAL, -RENTEROCC, -OWNEROCC, -Value, -NOTHISPPOP) %>%
+  spread(Census_category, value = PC) %>%
+  rename(PC_65UP_2010 = AGE65UP,
+         PC_18UNDER_2010 = AGEUNDER18,
+         PC_NATIVE_2010 = AMINDNH,
+         PC_ASIAN_2010 = ASIANNH,
+         PC_BACHELORS_2010 = BACHELORS,
+         PC_BLACK_2010 = BLACKNH,
+         PC_GRADPROF_2010 = GRADPROF,
+         PC_HH_NOVEH_2010 = HH_NOVEH,
+         PC_HH_MOBILE_2010 = HHMOBILE,
+         PC_HISPPOP_2010 = HISPPOP,
+         PC_LEP_2010 = LEP,
+         PC_TWORACE_2010 = MULTRACENH,
+         PC_OTHERRACE_2010 = OTHERNH,
+         PC_HAWAIIANPCFIS_2010 = PACIFICNH,
+         PC_POV185_2010 = POP_POV,
+         PC_WHITE_2010 = WHITENH
+         )
+
+# Gross values for 2017
+census_2017 <- x2017 %>%
+  filter(TCFLAG == 1) %>%
+  dplyr::select(GEOID2, POPTOTAL, AGEUNDER18, AGE65UP, WHITENH, BLACKNH, AMINDNH, ASIANNH, PACIFICNH, OTHERNH, MULTRACENH, HISPPOP, NOTHISPPOP, POPOVER25, BACHELORS, GRADPROF, LEP, POV185RATE, RENTEROCC, OWNEROCC, HHMOBILE, HH_NOVEH, HHTOTAL) %>%
+  mutate(POP_POV = POV185RATE * POPTOTAL) %>%
+  dplyr::select(-POV185RATE)
+
+# Add Jolly RID attribute for aggregation
+jolly_ids_char <- jolly_ids %>% mutate(GEOID_BG = as.character(GEOID_BG))
+jolly_17_attr <- left_join(census_2017, jolly_ids_char, by = c("GEOID2" = "GEOID_BG"))
+
+# Aggregate block groups to Jolly tracts by summing
+jolly_17_sum <- jolly_17_attr %>%
+  filter(!is.na(RID) & RID != -999) %>%
+  dplyr::select(-GEOID_TR) %>%
+  dplyr::select(GEOID2, RID, everything()) %>%
+  gather(3:(length(jolly_10_attr)-1), key = "Census_category", value = "Value") %>%
+  group_by(RID, Census_category) %>%
+  mutate(Value_summed = sum(Value, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::select(-GEOID2, -Value) %>%
+  unique() %>%
+  spread(Census_category, value = Value_summed)
+
+# Convert sums to percentages where applicable
+jolly_17_perc <- jolly_17_sum  %>%
+  dplyr::select(RID, POPOVER25, POPTOTAL, HHTOTAL, RENTEROCC, OWNEROCC, NOTHISPPOP, everything()) %>%
+  gather(8:length(jolly_10_sum), key = "Census_category", value = "Value") %>%
+  mutate(PC = ifelse(Census_category == "BACHELORS" | Census_category == "GRADPROF", Value/POPOVER25 * 100,
+                     ifelse(Census_category == "HH_NOVEH" | Census_category == "HHMOBILE", Value/HHTOTAL * 100, Value/POPTOTAL * 100))) %>%
+  mutate(RENT_TENURE_2017 = RENTEROCC/(RENTEROCC + OWNEROCC) * 100,
+         PC_POC_2017 = (POPTOTAL - NOTHISPPOP)/POPTOTAL * 100) %>%
+  dplyr::select(-POPTOTAL, -POPOVER25, -HHTOTAL, -RENTEROCC, -OWNEROCC, -Value, -NOTHISPPOP) %>%
+  spread(Census_category, value = PC) %>%
+  rename(PC_65UP_2017 = AGE65UP,
+         PC_18UNDER_2017 = AGEUNDER18,
+         PC_NATIVE_2017 = AMINDNH,
+         PC_ASIAN_2017 = ASIANNH,
+         PC_BACHELORS_2017 = BACHELORS,
+         PC_BLACK_2017 = BLACKNH,
+         PC_GRADPROF_2017 = GRADPROF,
+         PC_HH_NOVEH_2017 = HH_NOVEH,
+         PC_HH_MOBILE_2017 = HHMOBILE,
+         PC_HISPPOP_2017 = HISPPOP,
+         PC_LEP_2017 = LEP,
+         PC_TWORACE_2017 = MULTRACENH,
+         PC_OTHERRACE_2017 = OTHERNH,
+         PC_HAWAIIANPCFIS_2017 = PACIFICNH,
+         PC_POV185_2017 = POP_POV,
+         PC_WHITE_2017 = WHITENH
+         )
+
+# Get small area pop and housing unit estimates; aggregate to Jolly tracts
+sa_jolly <- left_join(sa, jolly_ids_char, by = c("BG10" = "GEOID_BG"))
+
+sa_10_17 <- sa_jolly %>%
+  filter(EST_YEAR == 2017 & !is.na(RID) & RID != -999) %>%
+  dplyr::select(BG10, RID, EST_YEAR, POPTOTAL_EST, HUTOTAL_EST, POPTOTAL10, HUTOTAL10) %>%
+  mutate(POP_NAME = "POPTOTAL_EST",
+         HU_NAME = "HUTOTAL_EST",
+         EST_YEAR2 = EST_YEAR) %>%
+  unite(POP_YR, POP_NAME, EST_YEAR) %>%
+  unite(HU_YR, HU_NAME, EST_YEAR2) %>%
+  spread(POP_YR, value = POPTOTAL_EST) %>%
+  spread(HU_YR, value = HUTOTAL_EST) %>%
+  rename(POPTOTAL_EST_2010 = POPTOTAL10,
+         HUTOTAL_EST_2010 = HUTOTAL10) %>%
+  gather(3:6, key = "Category", value = "Value") %>%
+  group_by(RID, Category) %>%
+  mutate(Value_summed = sum(Value, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::select(-BG10, -Value) %>%
+  unique() %>%
+  spread(Category, value = Value_summed)
+
+jolly_0010 <- left_join(jolly_00_perc, jolly_10_perc, by = "RID")
+jolly_0017 <- left_join(jolly_0010, jolly_17_perc, by = "RID")
+jolly_sa <- left_join(jolly_0017, sa_10_17, by = "RID")
+jolly_full <- left_join(jolly_sa, jolly_medians, by = c("RID" = "rid")) %>% rename(AA_Jolly_ID = RID)
+
+cluster_3 <- jolly_full %>%
+  dplyr::select(noquote(order(colnames(jolly_full)))) %>%
+  rename(Jolly_ID = AA_Jolly_ID)
+
+# fwrite(cluster_3, "Data/Block group data/Jolly tract 3-Timepoint Cluster Variables.csv")
+```
+
+# Impute missing hhi's, emv's, and rents
+
+```{r}
+# See where NAs lie
+summary(jolly_medians) 
+
+# Gross rent
+summary(lm(GROSSRENT_2017 ~ RENT_TENURE_2017 + HHMEDINC_2017 + HUTOTAL_EST_2017 + POPTOTAL_EST_2017 + PC_POC_2017 + PC_LEP_2017 + PC_HH_MOBILE_2017, data = cluster_3))
+
+# Home value
+summary(lm(HHMEDVAL_2000 ~ HHMEDINC_2000, data = cluster_3))
+summary(lm(HHMEDVAL_2010 ~ HHMEDINC_2010, data = cluster_3))
+summary(lm(HHMEDVAL_2017 ~ HHMEDINC_2017, data = cluster_3))
+
+
+
+ggplot(cluster_3, aes(HHMEDVAL_2000, HHMEDINC_2000)) +
+  geom_point()
+ggplot(cluster_3, aes(HHMEDVAL_2010, HHMEDINC_2010)) +
+  geom_point()
+ggplot(cluster_3, aes(HHMEDVAL_2017, HHMEDINC_2017)) +
+  geom_point()
+```
+
+# Compare relationships between Census variables across timepoints
+
+```{r}
+x00_17 <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
+
+# Relationship between hhi and emv, Census tracts
+summary(lm(MEDHOMEVAL_2000 ~ MEDIANHHI_2000, data = x00_17)) #39%
+summary(lm(MEDHOMEVAL_2010 ~ MEDIANHHI_2010, data = x00_17)) #53%
+summary(lm(MEDHOMEVAL_2017 ~ MEDIANHHI_2017, data = x00_17)) #57%
+
+# Relationship between medgrent and tenure, Census tracts
+summary(lm(MEDGRENT_2000 ~ RENT_TENURE_2000 + MEDIANHHI_2000, data = x00_17)) #27%
+summary(lm(MEDGRENT_2010 ~ RENT_TENURE_2010 + MEDIANHHI_2010, data = x00_17)) #36%
+summary(lm(MEDGRENT_2017 ~ RENT_TENURE_2017 + MEDIANHHI_2017, data = x00_17)) #45%
+```
+
+# Correlation matrix for Jolly tracts at 2000 
+
+```{r}
+ggplot <- function(...)
+ggplot2::ggplot(...) + scale_color_brewer(palette="Purples") + scale_fill_brewer(palette="Purples")
+unlockBinding("ggplot",parent.env(asNamespace("GGally")))
+assign("ggplot",ggplot,parent.env(asNamespace("GGally")))
+
+graph_corr <- ggpairs(jolly_2000) #, mapping = aes(color = clusters)),
+                      # columns = c('percentPOC2000', 'perc_poc', 'perSixFive2000', 'perc_65up', 'medHHinc2000', 'median_hhi', 'MedianValue2000', 'emv', 'builtSince00_2000', 'perc_new_bld', "clusters"),
+                      # columnLabels = c('% POC 00', '% POC 17', '% 65+ 00', '% 65+ 17', 'HHI 00', 'HHI 17', 'EMV 00', 'EMV 17', 'New Builds 00', 'New Builds 17', "clusters"))
+
+graph_corr <- graph_corr + theme(text = element_text(family = "Tw Cen MT"),
+                                 strip.background = element_blank(),
+                                 panel.background = element_rect(fill = "white"),
+                                 panel.grid = element_line(color = "white"))
+
+graph_corr
+
+ggsave("Results/Longitudinal Clustering/Jolly Tracts/Correlation Matrix for Jolly Tracts 2000.png", width = 20, height = 12)
+```
+
+# Compare correlations at 2000 timepoint, Jolly tracts v. Census
+
+```{r}
+x00_17 <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
+
+census_2000 <- x00_17 %>%
+  gather(2:length(x00_17), key = "Category", value = "Value") %>%
+  separate(Category, into = c("Cat", "Year"), sep = -4) %>%
+  filter(Year == 2000) %>%
+  unite(Category, Cat, Year, sep = "") %>%
+  mutate(Value = as.numeric(Value)) %>%
+  group_by(Category) %>%
+  mutate(Value = ifelse(is.na(Value), median(Value, na.rm = T), Value)) %>% # Quick imputation
+  ungroup() %>%
+  spread(Category, value = Value) %>%
+  dplyr::select(-Tract) %>%
+  rename(GROSSRENT_2000 = MEDGRENT_2000,
+         HHMEDINC_2000 = MEDIANHHI_2000,
+         HHMEDVAL_2000 = MEDHOMEVAL_2000)
+
+# Correlation Matrices for 2000 jolly tract data
+jolly_2000 <- cluster_3 %>%
+  gather(2:length(cluster_3), key = "Category", value = "Value") %>%
+  separate(Category, into = c("Cat", "Year"), sep = -4) %>%
+  filter(Year == 2000) %>%
+  unite(Category, Cat, Year, sep = "") %>%
+  mutate(Value = as.numeric(Value)) %>%
+  spread(Category, value = Value) %>%
+  dplyr::select(-Jolly_ID) %>%
+  mutate(GROSSRENT_2000 = as.numeric(GROSSRENT_2000)) %>%
+  mutate(GROSSRENT_2000 = ifelse(is.na(GROSSRENT_2000), median(GROSSRENT_2000, na.rm = T), GROSSRENT_2000)) #quick imputation
+
+cor_jolly_2000 <- cor(jolly_2000) %>% as.data.frame()
+cor_jolly_2000$VariableA <- rownames(cor_jolly_2000)
+
+cor_jolly_2000_full <- cor_jolly_2000 %>%
+  dplyr::select(VariableA, everything()) %>%
+  gather(2:length(cor_jolly_2000), key = "VariableB", value = "Correlation_Jolly") %>%
+  filter(VariableA != VariableB)
+
+cor_census_2000 <- cor(census_2000) %>% as.data.frame()
+cor_census_2000$VariableA <- rownames(cor_census_2000)
+
+cor_census_2000_full <- cor_census_2000 %>%
+  dplyr::select(VariableA, everything()) %>%
+  gather(2:length(cor_census_2000), key = "VariableB", value = "Correlation_Census") %>%
+  filter(VariableA != VariableB)
+
+corr_compare <- full_join(cor_jolly_2000_full, cor_census_2000_full, by = c("VariableA", "VariableB"))
+
+corr_compare_tidy <- corr_compare %>%
+  unite(Variables, VariableA, VariableB, sep = "::") %>%
+  gather(Correlation_Jolly, Correlation_Census, key = "Tract_type", value = "Correlation")
+
+corr_compare_diff <- corr_compare %>%
+  mutate(Difference = Correlation_Census-Correlation_Jolly)
+
+write_csv(corr_compare_tidy, "Results/Longitudinal Clustering/Jolly Tracts/Correlation Comparisons between Jolly Tracts and Census Tracts in Year 2000.csv")
+write_csv(corr_compare_diff, "Results/Longitudinal Clustering/Jolly Tracts/Correlation Differences between Census and Jolly Tracts in Year 2000.csv")
+```
+
+# Compare correlations at 2017 timepoint, Jolly tracts v. Census
+
+```{r}
+#x00_17 <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
+
+census_2017 <- x00_17 %>%
+  gather(2:length(x00_17), key = "Category", value = "Value") %>%
+  separate(Category, into = c("Cat", "Year"), sep = -4) %>%
+  filter(Year == 2017) %>%
+  unite(Category, Cat, Year, sep = "") %>%
+  mutate(Value = as.numeric(Value)) %>%
+  group_by(Category) %>%
+  mutate(Value = ifelse(is.na(Value), median(Value, na.rm = T), Value)) %>% # Quick imputation
+  ungroup() %>%
+  spread(Category, value = Value) %>%
+  dplyr::select(-Tract) %>%
+  rename(GROSSRENT_2017 = MEDGRENT_2017,
+         HHMEDINC_2017 = MEDIANHHI_2017,
+         HHMEDVAL_2017 = MEDHOMEVAL_2017)
+
+# Correlation Matrices for 2000 jolly tract data
+jolly_2017 <- cluster_3 %>%
+  gather(2:length(cluster_3), key = "Category", value = "Value") %>%
+  separate(Category, into = c("Cat", "Year"), sep = -4) %>%
+  filter(Year == 2017) %>%
+  unite(Category, Cat, Year, sep = "") %>%
+  mutate(Value = as.numeric(Value)) %>%
+  spread(Category, value = Value) %>%
+  dplyr::select(-Jolly_ID) %>%
+  mutate(GROSSRENT_2017 = as.numeric(GROSSRENT_2017)) %>%
+  mutate(GROSSRENT_2017 = ifelse(is.na(GROSSRENT_2017), median(GROSSRENT_2017, na.rm = T), GROSSRENT_2017)) #quick imputation
+
+cor_jolly_2017 <- cor(jolly_2017) %>% as.data.frame()
+cor_jolly_2017$VariableA <- rownames(cor_jolly_2017)
+
+cor_jolly_2017_full <- cor_jolly_2017 %>%
+  dplyr::select(VariableA, everything()) %>%
+  gather(2:length(cor_jolly_2017), key = "VariableB", value = "Correlation_Jolly") %>%
+  filter(VariableA != VariableB)
+
+cor_census_2017 <- cor(census_2017) %>% as.data.frame()
+cor_census_2017$VariableA <- rownames(cor_census_2017)
+
+cor_census_2017_full <- cor_census_2017 %>%
+  dplyr::select(VariableA, everything()) %>%
+  gather(2:length(cor_census_2000), key = "VariableB", value = "Correlation_Census") %>%
+  filter(VariableA != VariableB)
+
+corr_compare <- full_join(cor_jolly_2017_full, cor_census_2017_full, by = c("VariableA", "VariableB"))
+
+corr_compare_tidy <- corr_compare %>%
+  unite(Variables, VariableA, VariableB, sep = "::") %>%
+  gather(Correlation_Jolly, Correlation_Census, key = "Tract_type", value = "Correlation")
+
+corr_compare_diff <- corr_compare %>%
+  mutate(Difference = Correlation_Census-Correlation_Jolly)
+
+# write_csv(corr_compare_tidy, "Results/Longitudinal Clustering/Jolly Tracts/Correlation Comparisons between Jolly Tracts and Census Tracts in Year 2017.csv")
+# write_csv(corr_compare_diff, "Results/Longitudinal Clustering/Jolly Tracts/Correlation Differences between Census and Jolly Tracts in Year 2017.csv")
+```
+
+# Get order of variables and assignment for clustering algorithm
+
+```{r}
+# cluster_3 <- fread("Data/Block group data/Jolly tract 3-Timepoint Cluster Variables.csv")
+
+# Get order for clustering
+assign <- cluster_3 %>%
+  gather(everything(), key = "Variable_name", value = "var_value") %>%
+  dplyr::select(Variable_name) %>%
+  unique() %>%
+  mutate(ID = row_number()) %>%
+  filter(Variable_name != "Jolly_ID") %>%
+  separate(Variable_name, into = c("Variable", "Year"), sep = -4) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  group_by(Variable) %>%
+  mutate(Year_min = min(Year),
+         Year_max = max(Year)) %>%
+  ungroup() %>%
+  filter(Year == Year_min | Year == Year_max) %>%
+  dplyr::select(Variable, ID) %>%
+  group_by(Variable) %>%
+  summarize(Assignments = paste(ID, collapse = "_")) %>%
+  separate(Assignments, into = c("Min", "Max"), sep = "_") %>%
+  mutate(Min = as.numeric(Min),
+         Max = as.numeric(Max)) %>%
+  ungroup() %>%
+  filter(Variable != "PC_WHITE_20") # Don't include % white in clustering
+
+# Create list of cluster variables for clustering
+time_in_data <- vector("list", nrow(assign))
+for_length <- 1:nrow(assign)
+
+for (i in for_length) {
+  
+  assign_slice <- assign %>% slice(i)
+  time_in_data[[i]] <- assign_slice$Min:assign_slice$Max
+
+}
+
+names(time_in_data) <- assign$Variable
+
+```
+
+# Longitudinal clustering
+
+```{r}
+cld_snc_3 <- cld3d(cluster_3, timeInData = time_in_data)
+
+set.seed(410)
+kml3d(cld_snc_3, nbClusters = 8) # Any number of clusters exceeding 6 must be specified using nbClusters
+#choice(cld_snc)
+
+# Take a look at 8 clusters
+set.seed(410)
+cluster_3$clusters <- getClusters(cld_snc_3, 8)
+
+cluster_3_snc <- cluster_3 %>%
+  filter(!is.na(clusters)) %>%
+  dplyr::select(Jolly_ID, clusters, everything()) %>%
+  gather(3:length(cluster_3), key = "Variable_year", value = "Value") %>%
+  mutate(Value = as.numeric(Value)) %>%
+  separate(Variable_year, into = c("Variable", "Year"), sep = -4) %>%
+  separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
+  dplyr::select(-underscore)
+
+fwrite(cluster_3_snc, "Results/Longitudinal Clustering/Jolly Tracts/8-Clusters 3-Timepoints.csv")
+```
+
+# Create Jolly tract shapefile
+
+```{r}
+metro_bg <- st_read("Data/Block group data/Census2010TigerBlockGroup.shp")
+
+metro_jolly <- left_join(metro_bg, jolly_ids_char, by = c("GEOID10" = "GEOID_BG"))
+
+# Run boundary dissolve within each Jolly tract and view
+library(mapview)
+metro_jolly %>%  
+  split(.$RID) %>% 
+  lapply(st_union) %>% 
+  do.call(c, .) %>% # bind the list element to a single sfc
+  st_cast() %>% # mapview doesn't like GEOMETRY -> cast to MULTIPOLYGON
+  mapview()
+
+jollies <- metro_jolly %>%
+  split(.$RID) %>%
+  lapply(st_union) %>%
+  do.call(c, .) 
+
+#st_write(jollies, "Data/Block group data/Jolly tracts.shp")
+
+```
+

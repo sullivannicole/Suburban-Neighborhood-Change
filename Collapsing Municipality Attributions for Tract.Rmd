@@ -16,3 +16,22 @@ ctu_collapsed <- ctu %>%
 
 write_csv(ctu_collapsed, "Data/Metro Municipalities corresponding to Tracts.csv")
 ```
+# Collapse municipalities to jolly tracts
+
+```{r}
+ctu <- read_csv("Data/BlocksWithCTUs.csv")
+jollies <- read_csv("Data/Block group data/jolly_tract_geoids.csv")
+
+bg <- ctu %>%
+  mutate(GEOID_BG = as.numeric(substring(BLK10, 1, 12)))
+
+jollies_bg <- left_join(jollies, bg, by = "GEOID_BG")
+
+ctu_collapsed <- jollies_bg %>%
+  dplyr::select(CTU_NAME, RID) %>%
+  unique() %>%
+  group_by(RID) %>%
+  summarize(Municipalities = paste(CTU_NAME, collapse = ", "))
+
+write_csv(ctu_collapsed, "Data/Block group data/Municipality attributions for Jolly tracts.csv")
+```
