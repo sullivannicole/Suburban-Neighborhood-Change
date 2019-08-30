@@ -282,12 +282,15 @@ df_rf <- rf_data %>%
   mutate(predicted = predict(fit_rf))
 
 # Find top predictors
+options(scipen = 999)
 imp_vars <- data.frame(importance(fit_rf, scale = FALSE, type = 1))
 
 # Plot mean decreased accuracy
 imp_df <- imp_vars %>% 
   mutate(names = rownames(imp_vars)) %>% 
   arrange(desc(MeanDecreaseAccuracy))
+
+fwrite(imp_df, "Results/Longitudinal Clustering/Variable Importance by Mean Decrease in Accuracy.csv")
 
 imp_df %>% 
   top_n(10, MeanDecreaseAccuracy) %>% 
