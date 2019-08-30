@@ -706,7 +706,7 @@ write_csv(cluster_data, "Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv
 # Longitudinal Clustering - 25 Variables, 2000, 2010-2017
 
 ```{r}
-#cluster_data <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
+cluster_data <- read_csv("Data/25-Variable 2000, 2010-2017 Clustering Dataset.csv")
 
 cld_snc <- cld3d(cluster_data, timeInData = list(hu = 2:10, rent = 11:19, homeval = 20:28, hhi = 29:37, yt18 = 38:46, ot65 = 47:55, asian = 56:64, bachelors = 65:73, black = 74:82, gradprof = 83:91, pacific = 92:100, mobile = 101:109, noveh = 110:118, hisp = 119:127, lep = 128:136, lepaf = 137:142, lephmong = 143:148, lepspan = 149:157, native = 158:166, otherrace = 167:175, poc = 176:184, pov185 = 185:193, tworace = 194:202, pop = 212:220, rent = 221:229))
 
@@ -794,7 +794,7 @@ library(pander) # to tidy model output
 library(openxlsx)
 library(data.table)
 library(R.utils) # to unzip gz compressed file
-library(missForest)
+library(missForest) # random forest imputation of missing rent, and HHI
 ```
 
 ## Import 3-timepoint data
@@ -983,7 +983,6 @@ new_builds <- acs_all %>%
 # Join all data
 
 ```{r}
-
 acs_00 <- full_join(tracts_00_sum, rent_emv_hhi_00, by = "Tract") # Join 2000 datasets together
 acs_0010 <- full_join(acs_00, acs_2010, by = c("Tract" = "GEOID2_2010")) # Add 2010
 acs_0017 <- full_join(acs_0010, acs_2017, by = c("Tract" = "GEOID2_2017")) # Add 2017
@@ -1052,13 +1051,36 @@ cluster_snc <- inner_join(cluster_full_ngeo, nonMUSA, by = "Tract") %>%
 
 ```
 
+# Add in EMV from parcel data; drop ACS home value data
+
+```{r}
+cluster_snc <- fread("Data/3-Timepoint Random Forest Imputation Sans Geo, non-MUSA.csv")
+parcel_emv <- fread("Data/Tract-level/emv_00_10_17.csv")
+
+# Adjust parcel EMVs to 2017 dollars with Case Shiller Index
+emv_adj <- parcel_emv %>%
+  mutate(EMV_2000 = EMV_2000*(156.52657/100),
+         EMV_2010 = EMV_2010*(156.52657/123.85143))
+
+# Adjust HHI and rent to 2017 dollars with Consumer Product Index
+cluster_full <- left_join(cluster_snc, emv_adj, by = "Tract") %>%
+  dplyr::select(-MEDHOMEVAL_2000, -MEDHOMEVAL_2010, -MEDHOMEVAL_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017) %>%
+  unique() %>%
+  mutate(MEDGRENT_2000 = MEDGRENT_2000*(229.874/168.3),
+         MEDGRENT_2010 = MEDGRENT_2010*(229.874/208.046),
+         MEDIANHHI_2000 = MEDIANHHI_2000*(229.874/168.3),
+         MEDIANHHI_2010 = MEDIANHHI_2010*(229.874/208.046)) %>%
+  mutate(Tract = as.character(Tract))
+
+names(cluster_full)
+
+```
+
 # Get order of variables and assignment for clustering algorithm
 
 ```{r}
-# cluster_snc <- fread("Data/3-Timepoint Random Forest Imputation Sans Geo, non-MUSA.csv")
-
 # Get order for clustering
-assign <- cluster_snc %>%
+assign <- cluster_full %>%
   gather(everything(), key = "Variable_name", value = "var_value") %>%
   dplyr::select(Variable_name) %>%
   unique() %>%
@@ -1098,8 +1120,8 @@ names(time_in_data) <- assign$Variable
 # Longitudinal clustering on non-MUSA
 
 ```{r}
-# Input to cluster must be a data.frame only (not a tibble as well) & cannot contain duplicates - make sure all observations are unique with unique IDs
-cld_snc_3 <- cld3d(cluster_snc, timeInData = time_in_data)
+# Input to cluster must be a data.frame only (not a tibble as well) & cannot contain duplicates - make sure all observations are unique with unique IDs; ID (in this case Tract #) must be a character, NOT integer64 (from data.table package)
+cld_snc_3 <- cld3d(cluster_full, timeInData = time_in_data)
 
 set.seed(410)
 kml3d(cld_snc_3, nbClusters = 8) # Any number of clusters exceeding 6 must be specified using nbClusters
@@ -1107,18 +1129,18 @@ kml3d(cld_snc_3, nbClusters = 8) # Any number of clusters exceeding 6 must be sp
 
 # Take a look at 8 clusters
 set.seed(410)
-cluster_snc$clusters <- getClusters(cld_snc_3, 8)
+cluster_full$clusters <- getClusters(cld_snc_3, 8)
 
-cluster_3_snc <- cluster_snc %>%
+cluster_3_snc <- cluster_full %>%
   filter(!is.na(clusters)) %>%
   dplyr::select(Tract, clusters, everything()) %>%
-  gather(3:length(cluster_snc), key = "Variable_year", value = "Value") %>%
+  gather(3:length(cluster_full), key = "Variable_year", value = "Value") %>%
   mutate(Value = as.numeric(Value)) %>%
   separate(Variable_year, into = c("Variable", "Year"), sep = -4) %>%
   separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
   dplyr::select(-underscore)
 
-# fwrite(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, All Data.csv")
+# fwrite(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted.csv")
 ```
 
 ## Reverse-Engineering Clusters:  Decision Tree + Random Forest Model
@@ -1179,12 +1201,6 @@ plot(tree_wide)
 # mean of that boolean vector, then subtract from 1 to get the error
 # rate (original value identifies accuracy rate)
 1 - mean(predict(tree_wide) == cluster_snc$clusters, na.rm = T)
-
-```
-
-```{r}
-install.packages("caret", dependencies = T)
-
 
 ```
 
