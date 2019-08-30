@@ -1,0 +1,900 @@
+---
+title: "2017 SFD Homesteaded Parcels and Values"
+output: html_document
+---
+
+```{r setup}
+library(rgdal)
+library(leaflet)
+library(sp)
+library(tidyverse)
+library(data.table)
+library(bit64)
+library(sf)
+
+Sys.setenv(PATH = paste("C:\\Python27\\ArcGIS10.5\\", Sys.getenv("PATH"), sep=";"))
+```
+
+# *Step 1:  Get PINs of New Builds since 2016*
+
+# Pull in EOY 2018 Hennepin (EMV is 2017), select homesteaded residentials built in 2016 or 2017
+
+See file:///L:/Metadata/Layers/Metro_Regional_Parcel_Attributes_2018.pdf 4.20 Estimated Value of Building for more info.
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer - Hennepin shapefile comes directly from the current parcels dataset (because of 2 year lag for EMV assessments)
+arcpy.MakeFeatureLayer_management("N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data/ParcelsHennepinPoints2018.shp", "hennepin_lyr")
+
+# Select by attribute from layer
+arcpy.SelectLayerByAttribute_management("hennepin_lyr", "NEW_SELECTION", """
+
+YEAR_BUILT = 2016 And HOMESTEAD = 'Yes' And USECLASS1 = 'Residential' Or
+YEAR_BUILT = 2016 And HOMESTEAD = 'Yes' And USECLASS1 = 'Residential Lakeshore' Or
+YEAR_BUILT = 2016 And HOMESTEAD = 'Yes' And USECLASS1 = 'Farm' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Yes' And USECLASS1 = 'Residential' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Yes' And USECLASS1 = 'Residential Lakeshore' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Yes' And USECLASS1 = 'Farm' """)
+
+# Write out the selection
+arcpy.CopyFeatures_management("hennepin_lyr", 'Processed EMV 2017 Parcel Data/HennepinSFD_HS_2017_2016')
+
+```
+
+# Check that the selection worked
+
+```{r}
+new_hennepin <- readOGR("N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/Processed EMV 2017 Parcel Data/HennepinSFD_HS_2017_2016.shp")
+
+# new_hennepin@proj4string
+# new_hennepin@coords[,1]
+
+new_hennepin_map <- spTransform(new_hennepin, CRS("+init=epsg:4267"))
+
+new_hennepin_map@data$year_map_var = paste0('<strong>Year built: </strong>', prettyNum(new_hennepin_map@data$YEAR_BUILT ),'<br>','<strong>County PIN: </strong>', new_hennepin_map@data$COUNTY_PIN)
+
+leaflet(new_hennepin_map) %>%
+  addCircles(popup = ~year_map_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+  addTiles()  
+
+```
+
+# Pull in EOY 2018 Ramsey (EMV is 2017), select homesteaded residentials built in 2016 or 2017
+
+See file:///L:/Metadata/Layers/Metro_Regional_Parcel_Attributes_2018.pdf 4.20 Estimated Value of Building for more info.
+
+```{python}
+
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer - Hennepin shapefile comes directly from the current parcels dataset (because of 2 year lag for EMV assessments)
+arcpy.MakeFeatureLayer_management("EMV 2017 Parcel Data/ParcelsRamseyPoints2018.shp", "ramsey_lyr")
+
+# :: ------------CODE BELOW FINDS UNIQUE VALUES FOR ATTRIBUTE SELECTION-----------------------
+
+# Create function that gets unique values of an attribute in a table
+# def unique_values(table , field):
+#    with arcpy.da.SearchCursor(table, [field]) as cursor:
+#        return sorted({row[0] for row in cursor})
+
+# ramsey_useclasses = unique_values("ramsey_lyr" , "USECLASS1")
+
+# Look at possible values for USECLASS1
+# print (ramsey_useclasses)
+
+# Look at possible values for USECLASS2
+# ramsey_useclass2 = unique_values("ramsey_lyr", "USECLASS2")
+# print(ramsey_useclass2)
+
+# Look at possible values for USECLASS3
+# ramsey_useclass3 = unique_values("ramsey_lyr", "USECLASS3")
+# print(ramsey_useclass3)
+
+# Look at possible values for USECLASS4
+# ramsey_useclass4 = unique_values("ramsey_lyr", "USECLASS4")
+# print(ramsey_useclass4) """
+
+# USECLASS1 and USECLASS2 appear to be redundant while USECLASS3 and USECLASS4 aren't relevant for our purposes
+# ramsey_hs = unique_values("ramsey_lyr", "HOMESTEAD")
+# print(ramsey_hs) # Fractional homestead = multiple unrelated co-owners that don't all inhabit the property.  Include.
+
+# :: ------------CODE TO FIND VALUES FOR ATTRIBUTE SELECTION ENDS-----------------------
+
+# Select by attribute from layer
+arcpy.SelectLayerByAttribute_management("ramsey_lyr", "NEW_SELECTION", """
+
+YEAR_BUILT = 2016 And HOMESTEAD = 'Yes' And USECLASS1 = 'Res 1 unit' Or
+YEAR_BUILT = 2016 And HOMESTEAD = 'Yes' And USECLASS1 = 'Res 2-3 units' Or
+YEAR_BUILT = 2016 And HOMESTEAD = 'Fractional' And USECLASS1 = 'Res 1 unit' Or
+YEAR_BUILT = 2016 And HOMESTEAD = 'Fractional' And USECLASS1 = 'Res 2-3 units' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Yes' And USECLASS1 = 'Res 1 unit' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Yes' And USECLASS1 = 'Res 2-3 units' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Fractional' And USECLASS1 = 'Res 1 unit' Or
+YEAR_BUILT = 2017 And HOMESTEAD = 'Fractional' And USECLASS1 = 'Res 2-3 units' """)
+
+# Write out the selection
+arcpy.CopyFeatures_management("ramsey_lyr", 'Processed EMV 2017 Parcel Data/RamseySFD_HS_2017_2016')
+
+```
+
+## Check that the selection worked
+
+```{r}
+new_ramsey <- readOGR("N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/Processed EMV 2017 Parcel Data/RamseySFD_HS_2017_2016.shp")
+
+# new_hennepin@proj4string
+# new_hennepin@coords[,1]
+
+new_ramsey_map <- spTransform(new_ramsey, CRS("+init=epsg:4267"))
+
+new_ramsey_map@data$year_map_var = paste0('<strong>Year built: </strong>', prettyNum(new_ramsey_map@data$YEAR_BUILT ),'<br>','<strong>Use classification: </strong>', new_ramsey_map@data$USECLASS1)
+
+leaflet(new_ramsey_map) %>%
+  addCircles(popup = ~year_map_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+  addTiles() 
+
+# Note - probably don't need to include 2-3 units residential.  Is it even possible for them to be homesteaded?
+
+```
+
+# Pull in EOY 2017 5-County Data (EMV is 2017), select homesteaded residentials built in 2016 or 2017
+
+file:///L:/Metadata/Layers/Parcels2017.html
+
+```{python}
+
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer - Hennepin shapefile comes directly from the current parcels dataset (because of 2 year lag for EMV assessments)
+arcpy.MakeFeatureLayer_management("EMV 2017 Parcel Data/5CountyBuilt20162017.shp", "acdsw_lyr")
+
+# :: ------------CODE BELOW FINDS UNIQUE VALUES FOR ATTRIBUTE SELECTION-----------------------
+
+# Create function that gets unique values of an attribute in a table
+def unique_values(table , field):
+    with arcpy.da.SearchCursor(table, [field]) as cursor:
+        return sorted({row[0] for row in cursor})
+
+acdsw_useclasses = unique_values("acdsw_lyr" , "USE1_DESC")
+
+# Look at possible values for USECLASS1
+print (acdsw_useclasses)
+
+# Look at possible values for USECLASS2
+acdsw_useclass2 = unique_values("acdsw_lyr", "USE2_DESC")
+print(acdsw_useclass2)
+
+# Look at possible values for USECLASS3
+acdsw_useclass3 = unique_values("acdsw_lyr", "USE3_DESC")
+print(acdsw_useclass3)
+
+# Look at possible values for USECLASS4
+acdsw_useclass4 = unique_values("acdsw_lyr", "USE4_DESC")
+print(acdsw_useclass4)
+
+# USECLASS1 and USECLASS2 appear to be redundant while USECLASS3 and USECLASS4 aren't relevant for our purposes
+acdsw_hs = unique_values("acdsw_lyr", "HOMESTEAD")
+print(acdsw_hs) # Fractional homestead = multiple unrelated co-owners that don't all inhabit the property.  Include.
+
+# :: ------------CODE TO FIND VALUES FOR ATTRIBUTE SELECTION ENDS-----------------------
+
+```
+
+
+```{python}
+
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("EMV 2017 Parcel Data/5CountyBuilt20162017.shp", "acdsw_lyr")
+
+# Select by attribute from layer
+arcpy.SelectLayerByAttribute_management("acdsw_lyr", "NEW_SELECTION", """
+
+HOMESTEAD = 'Y' And USE1_DESC = '100 Res 1 unit' Or
+HOMESTEAD = 'Y' And USE1_DESC = '105 Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'Res 1 unit' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'RESIDENTIAL' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'AGRICULTURAL, RESIDENTIAL SINGLE FAMILY, RESIDENTIAL SINGLE FAMILY' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'AGRICULTURAL, AGRICULTURAL, AGRICULTURAL RESIDENTIAL SINGLE FAMILY' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'RESIDENTIAL SINGLE FAMILY' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'AGRICULTURAL, AGRICULTURAL, RESIDENTIAL SINGLE FAMILY' Or
+HOMESTEAD = 'Y' And USE1_DESC = 'RESIDENTIAL SINGLE FAMILY, RESIDENTIAL SINGLE FAMILY' Or
+HOMESTEAD = 'Y' And USE2_DESC = '100 Res 1 unit' Or
+HOMESTEAD = 'Y' And USE2_DESC = 'Res 1 unit' Or
+HOMESTEAD = 'Y' And USE2_DESC = 'RESIDENTIAL' Or
+HOMESTEAD = 'Y' And USE2_DESC = 'RESIDENTIAL TOWNHOUSE' Or
+HOMESTEAD = 'Y' And USE2_DESC = 'Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE2_DESC = '105 Res 203 units' Or
+HOMESTEAD = 'Y' And USE3_DESC = '105 Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE3_DESC = 'Res 1 unit' Or
+HOMESTEAD = 'Y' And USE3_DESC = 'RESIDENTIAL' Or
+HOMESTEAD = 'Y' And USE4_DESC = '105 Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE4_DESC = 'Res 1 unit' Or
+HOMESTEAD = 'Y' And USE4_DESC = 'Res 2-3 units' Or
+HOMESTEAD = 'Y' And USE4_DESC = 'RESIDENTIAL' Or
+COUNTY_ID = '019' And USE1_DESC = 'Res 1 unit'
+
+
+""")
+
+# Write out the selection
+arcpy.CopyFeatures_management("acdsw_lyr", 'Processed EMV 2017 Parcel Data/5CountySFD_HS_2017_2016')
+
+```
+
+## Check that the selection worked
+
+```{r}
+new_acdsw <- readOGR("N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/Processed EMV 2017 Parcel Data/5CountySFD_HS_2017_2016.shp")
+
+# new_hennepin@proj4string
+# new_hennepin@coords[,1]
+
+new_acdsw_map <- spTransform(new_acdsw, CRS("+init=epsg:4267"))
+
+new_acdsw_map@data$year_map_var = paste0('<strong>Year built: </strong>', prettyNum(new_acdsw_map@data$YEAR_BUILT ),'<br>','<strong>Use classification: </strong>', new_acdsw_map@data$USE1_DESC)
+
+leaflet(new_acdsw_map) %>%
+  addCircles(popup = ~year_map_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+  addTiles() 
+
+```
+
+# *Step 2:  Get PINs of builds prior to 2016*
+
+# Select parcels built prior to 2016 from new parcel data using the PINs used in the 2015 analysis
+
+Using PINs from the 2015 analysis to select those same parcels was determined to be easier than trying to replicate what cleaning/processing was done to get these parcels (the mxd containing this work has been deleted or moved and the staff member formerly involved doesn't remember the steps).
+
+```{r}
+acdsw <- st_read('EMV 2017 Parcel Data/Parcels5County2017.shp')
+x2015PINs <- fread('EMV 2017 Parcel Data/UniquePINsForSelectionPriorTo2016.csv') 
+
+# Some PINs in 2017/2018 parcel data have leading zeros not contained in the PINs from Dennis' data - ameliorate this
+PINtracts <- x2015PINs %>% # Contains un-duplicated PINs of parcels of interest (HS-SFDs)
+  mutate(Exclude = ifelse(PIN == "139-119180060" & GEOID == "27139080903", 1,
+                          ifelse(PIN == "003-353424140005" & is.na(GEOID), 1, 0))) %>% # Same building attribute to two different tracts; remove second tract attribution
+  filter(Exclude == 0) %>%
+  select(-Exclude) %>%
+  separate(PIN, into = c("County_FIPS", "PIN_suffix"), sep = "-") %>%
+  mutate(PIN_length = nchar(PIN_suffix)) %>%
+  mutate(Zero_to_add = ifelse(County_FIPS == 139 & PIN_length == 8, 0, ''),
+         Dash = "-",
+         PIN_correction_added = ifelse(Zero_to_add == 0, 1, 0)) %>%
+  unite(PIN, County_FIPS, Dash, Zero_to_add, PIN_suffix, sep = '') %>%
+  select(-PIN_length)
+  
+emv5County <- inner_join(PINtracts, acdsw, by = 'PIN') 
+```
+
+## Check that inner join worked
+
+```{r}
+emv5County_geo <- inner_join(acdsw, x2015PINs, by = "PIN")
+
+emv5County_geo_unique <- emv5County_geo %>%
+  select(COUNTY_ID, PIN, YEAR_BUILT, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+emv5County_sp <- as_Spatial(emv5County_geo_unique)
+
+writeOGR(emv5County_sp, "EMV 2017 Parcel Data", "Parcels5County2017Selectedby2015Parcels", "ESRI Shapefile")
+```
+
+## Check for duplications & source of duplications
+
+```{r}
+# Are duplicates present?
+emvDups <- emv5County %>%
+  select(PIN) %>%
+  group_by(PIN) %>%
+  count() %>%
+  filter(n > 1)
+
+# Where did these duplicates come from?
+pins <- acdsw %>%
+  select(PIN)
+
+pin_df <- as.data.frame(pins)
+
+pinDups <- pin_df %>%
+  group_by(PIN) %>%
+  count() %>%
+  arrange(desc(n))
+
+# Duplicates in 5-county dataset (named acdsw) appear to contain non-addressed information about buildings with EMV of 0
+filtered <- acdsw %>%
+  filter(PIN == "003--25302421VAC")
+
+# What do the duplicates originating from acdsw look like?
+dups <- left_join(emvDups, acdsw, by = "PIN")
+
+## Duplicate lines contain same info, for the most part.  About 50% have different 'geometry' attributes (don't know why).  The other half contain variations on irrelevant variables, such as acreage.
+
+```
+
+## Eliminate duplicates, add tract attribute, and write out file
+
+```{r}
+# Eliminate duplicate lines by selecting only necessary variables
+emv5CountyUnique <- emv5County %>%
+  select(COUNTY_ID, PIN, YEAR_BUILT, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+# Add tract attribute to dataset
+emv5CountyTract <- left_join(emv5CountyUnique, PINtracts, by = 'PIN')
+
+# Ensure year built is prior to 2016 (values for new builds are captured in previous code)
+emv5CountyTractPriorTo16 <- emv5CountyTract %>%
+  filter(YEAR_BUILT < 2016)
+
+fwrite(emv5CountyTractPriorTo16, 'Processed EMV 2017 Parcel Data/5CountySFD_HS_PriorTo_2016.csv')
+```
+
+# Load in all data for parcels built prior to 2016, select HS-SFDs by PINs from 2015 analysis and add tract attribute
+
+Unjoined PINs are parcels that have been split, aggregated, or had a PIN-change since 2015/2016.  These PINs are addressed in the next section.
+
+```{r}
+hennepin <- st_read("EMV 2017 Parcel Data/ParcelsHennepinPoints2018.shp")
+ramsey <- st_read("EMV 2017 Parcel Data/ParcelsRamseyPoints2018.shp")
+acdsw <- fread("Processed EMV 2017 Parcel Data/5CountySFD_HS_PriorTo_2016.csv")
+
+# Select only relevant variables and avoid duplication
+hennepinPared <- hennepin %>%
+  as_tibble() %>% # Sometimes, 2 different points correspond to 1 parcel ID, and these two points are  in different tracts.  Convert to tibble to avoid 
+  select(PIN, YEAR_BUILT, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+ramseyPared <- ramsey %>%
+  as_tibble() %>%
+  select(PIN, YEAR_BUILT, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+# Merge Ramsey and Hennepin datasets
+ramseyHennepin <- bind_rows(hennepinPared, ramseyPared)
+
+ramseyHennepinTracts <- inner_join(PINtracts, ramseyHennepin, by = 'PIN') # Adjustments made to PINs only apply to Scott, so can use either PINtracts or x2015PINs dataset
+
+# Check that there are no duplicates - n = 1
+# ramseyHennepinTractsDups <- ramseyHennepinTracts %>%
+#   select(PIN) %>%
+#   group_by(PIN) %>%
+#   count() %>%
+#   arrange(desc(n))
+
+buildsPriorTo2016emv2017 <- bind_rows(acdsw, ramseyHennepinTracts)
+
+fwrite(buildsPriorTo2016emv2017, "Processed EMV 2017 Parcel Data/Builds Prior To 2016 EMV 2017.csv")
+
+```
+
+# *Step 3:  Select 2017/2018 parcels with PIN ID changes from 2015/2016*
+
+# Find 2017 parcels with PIN ID changes from 2015 (for Anoka, Carver, Dakota, Scott & Washington)
+
+Found that some PINs from 2015 (or 2016 for Hennepin & Ramsey) are not in the 2017/2018 parcel data; on closer inspection, appears some parcels were split, aggregated or merely assigned new PINs; therefore, pull un-selected PINs in order to run an intersect on 2017 polygons and then on 2018 polygons.  At the end of this section, the parcels found will be added to the full 2017/2018 median home value dataset.
+
+```{r}
+# Grab PINs that no longer exist in 2017 parcel data
+unjoined_PINs <- anti_join(PINtracts, buildsPriorTo2016emv2017, by = "PIN")
+
+unjoined_PINs_2015 <- unjoined_PINs %>%
+  separate(PIN, into = c("County_FIPS", "PIN_suffix"), sep = "-") %>%
+  separate(PIN_suffix, into = c("PIN_prefix", "PIN_suffix"), sep = 1) %>%
+  mutate(Inner_char = ifelse(PIN_correction_added == 1, "", PIN_prefix),
+         Dash_to_add = "-") %>%
+  unite(PIN, County_FIPS, Dash_to_add, Inner_char, PIN_suffix, sep = "") %>%
+  select(-PIN_prefix, -PIN_correction_added)
+
+fwrite(unjoined_PINs_2015, "EMV 2017 Parcel Data/2015 PINs NA as of 2017.csv")
+
+```
+
+## Merge 2015 five county polygon parcel data together for intersect (2017 data merged in another step)
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data"
+
+# Convert shp to table view
+arcpy.MakeTableView_management("ParcelsAnokaPolygons2015.shp", "anoka_tbl")
+arcpy.MakeTableView_management("ParcelsCarverPolygons2015.shp", "carver_tbl")
+arcpy.MakeTableView_management("ParcelsDakotaPolygons2015.shp", "dakota_tbl")
+arcpy.MakeTableView_management("ParcelsScottPolygons2015.shp", "scott_tbl")
+arcpy.MakeTableView_management("ParcelsWashingtonPolygons2015.shp", "washington_tbl")
+
+arcpy.Merge_management(["anoka_tbl", "carver_tbl", "dakota_tbl", "scott_tbl", "washington_tbl"], "Parcels5CountyPolygons2015")
+
+```
+
+## Select unjoined PINs from 2015 5-County polygons
+
+```{r}
+poly5County <- st_read("EMV 2017 Parcel Data/Parcels5CountyPolygons2015.shp")
+
+unjoined_parcels <- unjoined_PINs_2015 %>%
+  mutate(Unjoined = 1) # Mark PINs so they can be selected after join - anti_join can't be used, or geometric data in sf dataframe will be lost :(
+
+poly5County_unjoined <- left_join(poly5County, unjoined_parcels, by = "PIN")
+
+unjoined_poly <- poly5County_unjoined %>%
+  filter(!is.na(Unjoined)) %>%
+  select(-GEOID)
+
+unjoined_PINs_2015 %>%
+  separate(PIN, into = c("County", "PIN"), sep = "-") %>%
+  group_by(County) %>%
+  count()
+
+unjoined_poly_sp <- as_Spatial(unjoined_poly)
+
+writeOGR(unjoined_poly_sp, "EMV 2017 Parcel Data", "UnjoinedParcels5CountyPolygons2015", "ESRI Shapefile")
+
+```
+
+## Check join and filtering to 2015 5-County unjoined parcels
+
+```{r}
+unjoined_shp <- readOGR("EMV 2017 Parcel Data/UnjoinedParcels5CountyPolygons2015.shp")
+
+unjoined_map <- spTransform(unjoined_shp, CRS("+init=epsg:4267"))
+
+unjoined_map@data$pin_var = paste0('<strong>PIN: </strong>', prettyNum(unjoined_map@data$PIN))
+
+leaflet(unjoined_map) %>%
+  addPolygons(popup = ~pin_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 0.05, bringToFront = TRUE)) %>%
+  addTiles() 
+
+```
+
+## Merge all 5 2017 counties' polygonal data together
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data"
+
+# Convert shps to table views
+arcpy.MakeTableView_management("ParcelsAnokaPolygons2017.shp", "anoka_tbl")
+arcpy.MakeTableView_management("ParcelsCarverPolygons2017.shp", "carver_tbl")
+arcpy.MakeTableView_management("ParcelsDakotaPolygons2017.shp", "dakota_tbl")
+arcpy.MakeTableView_management("ParcelsScottPolygons2017.shp", "scott_tbl")
+arcpy.MakeTableView_management("ParcelsWashingtonPolygons2017.shp", "washington_tbl")
+
+arcpy.Merge_management(["anoka_tbl", "carver_tbl", "dakota_tbl", "scott_tbl", "washington_tbl"], "Parcels5CountyPolygons2017")
+
+```
+## Select 2017 5-County parcels that contain 2015 missing parcel polygons; write out to new ESRI shapefile
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("Parcels5CountyPolygons2017.shp", "2017_lyr")
+arcpy.MakeFeatureLayer_management("UnjoinedParcels5CountyPolygons2015.shp", "2015_lyr")
+
+# Select 2017 parcels that contain missing 2015 parcel polygons
+arcpy.SelectLayerByLocation_management("2017_lyr", "intersect", "2015_lyr")
+
+# Write out the selection
+arcpy.CopyFeatures_management("2017_lyr", 'Processed EMV 2017 Parcel Data/5County_PIN_Change_New_Parcel_Polygons')
+
+```
+
+## Check selection of new 5-County parcels from 2017 datasets
+
+```{r}
+new_parcels_shp <- readOGR("Processed EMV 2017 Parcel Data/5County_PIN_Change_New_Parcel_Polygons.shp")
+
+new_parcels_map <- spTransform(new_parcels_shp, CRS("+init=epsg:4267"))
+
+new_parcels_map@data$pin_var = paste0('<strong>PIN: </strong>', prettyNum(new_parcels_map@data$PIN))
+
+leaflet(new_parcels_map) %>%
+  addCircles(popup = ~pin_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 0.05, bringToFront = TRUE)) %>%
+  addTiles() 
+
+```
+
+## Find Ramsey 2018 parcels with PIN ID changes from 2016
+
+```{r}
+ramsey_poly <- st_read("EMV 2017 Parcel Data/ParcelsRamseyPolygons2016.shp")
+unjoined_PINs_2015 <- fread("EMV 2017 Parcel Data/2015 PINs NA as of 2017.csv")
+
+unjoined_parcels <- unjoined_PINs_2015 %>%
+  mutate(Unjoined = 1)  # Mark PINs so they can be selected after join - anti_join can't be used, or geometric data in sf dataframe will be lost
+
+ramsey_unjoined <- left_join(ramsey_poly, unjoined_parcels, by = "PIN")
+
+ramsey_unjoined_poly <- ramsey_unjoined %>%
+  filter(!is.na(Unjoined)) %>%
+  select(-GEOID)
+
+ramsey_unjoined_poly_sp <- as_Spatial(ramsey_unjoined_poly)
+
+writeOGR(ramsey_unjoined_poly_sp, "EMV 2017 Parcel Data", "UnjoinedParcelsRamseyPolygons2016", "ESRI Shapefile")
+
+```
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("ParcelsRamseyPolygons2018.shp", "2018_lyr")
+arcpy.MakeFeatureLayer_management("UnjoinedParcelsRamseyPolygons2016.shp", "2016_lyr")
+
+# Select 2017 parcels that contain missing 2015 parcel polygons
+arcpy.SelectLayerByLocation_management("2018_lyr", "intersect", "2016_lyr")
+
+# Write out the selection
+arcpy.CopyFeatures_management("2018_lyr", 'Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_New_Parcel_Polygons')
+
+```
+
+## Find Hennepin 2018 parcels with PIN ID changes from 2016
+
+```{r}
+hennepin_poly <- st_read("EMV 2017 Parcel Data/ParcelsHennepinPolygons2016.shp")
+unjoined_PINs_2015 <- fread("EMV 2017 Parcel Data/2015 PINs NA as of 2017.csv")
+
+unjoined_parcels <- unjoined_PINs_2015 %>%
+  mutate(Unjoined = 1) # Mark PINs so they can be selected after join - anti_join can't be used, or geometric data in sf dataframe will be lost
+
+hennepin_unjoined <- left_join(hennepin_poly, unjoined_parcels, by = "PIN")
+
+hennepin_unjoined_poly <- hennepin_unjoined %>%
+  filter(!is.na(Unjoined)) %>%
+  select(-GEOID)
+
+hennepin_unjoined_poly_sp <- as_Spatial(hennepin_unjoined_poly)
+
+writeOGR(hennepin_unjoined_poly_sp, "EMV 2017 Parcel Data", "UnjoinedParcelsHennepinPolygons2016", "ESRI Shapefile")
+
+```
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary/EMV 2017 Parcel Data"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("ParcelsHennepinPolygons2018.shp", "2018_lyr")
+arcpy.MakeFeatureLayer_management("UnjoinedParcelsHennepinPolygons2016.shp", "2016_lyr")
+
+# Select 2017 parcels that contain missing 2015 parcel polygons
+arcpy.SelectLayerByLocation_management("2018_lyr", "intersect", "2016_lyr")
+
+# Write out the selection
+arcpy.CopyFeatures_management("2018_lyr", 'Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_New_Parcel_Polygons')
+
+```
+
+## Bind all of the builds since 2016 together, write out as ESRI shapefile
+
+```{r}
+hennepin1617 <- st_read("Processed EMV 2017 Parcel Data/HennepinSFD_HS_2017_2016.shp")
+ramsey1617 <- st_read("Processed EMV 2017 Parcel Data/RamseySFD_HS_2017_2016.shp")
+acdsw1617 <- st_read("Processed EMV 2017 Parcel Data/5CountySFD_HS_2017_2016.shp")
+
+hennepin1617t <- hennepin1617 %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+ramsey1617t <- ramsey1617 %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+acdsw1617 <- acdsw1617 %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL) %>%
+  unique()
+
+hennepinRamsey1617 <- rbind(hennepin1617t, ramsey1617t) # Do NOT use bind_rows; not compatible with sf package
+metro1617 <- rbind(acdsw1617, hennepinRamsey1617)
+
+metro1617shp <- as_Spatial(metro1617)
+
+writeOGR(metro1617shp, dsn = "Processed EMV 2017 Parcel Data", layer = "Metro_SFD_HS_2017_2016", driver = "ESRI Shapefile", overwrite_layer = T)
+
+```
+
+# Load up 2016 and 2017 data all together, as well as 2010 census tracts; perform spatial join to add tract attribute
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("Processed EMV 2017 Parcel Data/Metro_SFD_HS_2017_2016.shp", "metro201617_lyr")
+arcpy.MakeFeatureLayer_management("Census2010TigerTract.shp", "tracts2010_lyr")
+
+# Select by attribute from layer
+arcpy.SpatialJoin_analysis("metro201617_lyr", "tracts2010_lyr", "Processed EMV 2017 Parcel Data/Metro_SFD_1617_Tracts")
+
+```
+
+# Ensure join went through correctly
+
+```{r}
+new_metro_builds <- readOGR("Processed EMV 2017 Parcel Data", "Metro_SFD_1617_Tracts")
+
+new_metro_map <- spTransform(new_metro_builds, CRS("+init=epsg:4267"))
+
+new_metro_map@data$year_map_var = paste0('<strong>Tract: </strong>', prettyNum(new_metro_map@data$GEOID10))
+
+leaflet(new_metro_map) %>%
+  addCircles(popup = ~year_map_var,
+             color = "teal",
+             highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+  addTiles() 
+
+
+```
+
+## Add tract attribute to parcels with PIN changes :: Ramsey
+
+## First, convert to points (polygons might touch multiple tracts)
+
+```{r}
+ramsey_pts <- st_read("EMV 2017 Parcel Data/ParcelsRamseyPoints2018.shp")
+ramsey_changed <- st_read("Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_New_Parcel_Polygons.shp")
+
+ramsey_changed_t <- ramsey_changed %>%
+  as_tibble() %>%
+  mutate(PIN_change = 1) %>%
+  select(PIN, PIN_change)
+
+ramsey_pts_changed <- left_join(ramsey_pts, ramsey_changed_t, by = "PIN")
+
+ramsey_changed_only <- ramsey_pts_changed %>%
+  filter(PIN_change == 1)
+
+st_write(ramsey_changed_only, "Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_New_Parcel_Points.shp")
+
+```
+
+## Next, add tract attribute to points shapefile
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_New_Parcel_Points.shp", "ramsey_change_lyr")
+arcpy.MakeFeatureLayer_management("Census2010TigerTract.shp", "tracts2010_lyr")
+
+# Select by attribute from layer
+arcpy.Identity_analysis("ramsey_change_lyr", "tracts2010_lyr", "Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_Tracts")
+
+```
+
+## Add tract attribute to parcels with PIN changes :: Hennepin
+
+```{r}
+hennepin_pts <- st_read("EMV 2017 Parcel Data/ParcelsHennepinPoints2018.shp")
+hennepin_changed <- st_read("Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_New_Parcel_Polygons.shp")
+
+hennepin_changed_t <- hennepin_changed %>%
+  as_tibble() %>%
+  mutate(PIN_change = 1) %>%
+  select(PIN, PIN_change)
+
+hennepin_pts_changed <- left_join(hennepin_pts, hennepin_changed_t, by = "PIN")
+
+hennepin_changed_only <- hennepin_pts_changed %>%
+  filter(PIN_change == 1)
+
+st_write(hennepin_changed_only, "Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_New_Parcel_Points.shp")
+
+```
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_New_Parcel_Points.shp", "hennepin_change_lyr")
+arcpy.MakeFeatureLayer_management("Census2010TigerTract.shp", "tracts2010_lyr")
+
+# Select by attribute from layer
+arcpy.Identity_analysis("hennepin_change_lyr", "tracts2010_lyr", "Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_Tracts")
+
+```
+
+## Add tract attribute to parcels with PIN changes :: 5-Counties
+
+```{r}
+acdsw_pts <- st_read("EMV 2017 Parcel Data/Parcels5County2017.shp")
+acdsw_changed <- st_read("Processed EMV 2017 Parcel Data/5County_PIN_Change_New_Parcel_Polygons.shp")
+
+acdsw_changed_t <- acdsw_changed %>%
+  as_tibble() %>%
+  mutate(PIN_change = 1) %>%
+  select(PIN, PIN_change)
+
+acdsw_pts_changed <- left_join(acdsw_pts, acdsw_changed_t, by = "PIN")
+
+acdsw_changed_only <- acdsw_pts_changed %>%
+  filter(PIN_change == 1)
+
+st_write(acdsw_changed_only, "Processed EMV 2017 Parcel Data/5County_PIN_Change_New_Parcel_Points.shp")
+
+```
+
+```{python}
+import arcpy
+from arcpy import env
+env.overwriteOutput = True
+env.workspace = "N:/CommDev/Research/Research/Suburban-Neighborhood-Change/Supplementary"
+
+# Convert shp to layer
+arcpy.MakeFeatureLayer_management("Processed EMV 2017 Parcel Data/5County_PIN_Change_New_Parcel_Points.shp", "acdsw_change_lyr")
+arcpy.MakeFeatureLayer_management("Census2010TigerTract.shp", "tracts2010_lyr")
+
+# Select by attribute from layer
+arcpy.Identity_analysis("acdsw_change_lyr", "tracts2010_lyr", "Processed EMV 2017 Parcel Data/5County_PIN_Change_Tracts")
+
+```
+
+# *Step 4: Combine all data*
+
+# Bring all data - new builds since 2016, changed PINs since 2015/2016, and builds prior to 2016 - together
+
+```{r}
+buildsPriorTo2016emv2017 <- fread("Processed EMV 2017 Parcel Data/Builds Prior to 2016 EMV 2017.csv")
+new_metro_builds <- readOGR("Processed EMV 2017 Parcel Data", "Metro_SFD_1617_Tracts")
+ramsey_pin_change <- readOGR("Processed EMV 2017 Parcel Data/Ramsey_PIN_Change_Tracts.shp")
+hennepin_pin_change <- readOGR("Processed EMV 2017 Parcel Data/Hennepin_PIN_Change_Tracts.shp")
+acdsw_pin_change <- readOGR("Processed EMV 2017 Parcel Data/5County_PIN_Change_Tracts.shp")
+
+# Pare down variables in dataset containing 2017 EMVs for new builds since 2016
+metro1617emv2017 <- new_metro_builds %>%
+  as_tibble() %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL, GEOID10) %>%
+  rename(TRACT = GEOID10)
+
+# Check for duplicates
+metro1617emv2017 %>%
+  group_by(PIN) %>%
+  count() %>%
+  arrange(desc(n))
+
+# Pare down variables in dataset containg 2017 EMVs for builds prior to 2016 
+metroPriorTo2016emv2017 <- buildsPriorTo2016emv2017 %>%
+  select(PIN, EMV_BLDG, GEOID, EMV_TOTAL) %>%
+  mutate(GEOID = as.factor(GEOID)) %>%
+  rename(TRACT = GEOID)
+
+# Pare down variables in datasets containing 2017 EMVs for parcels with PIN changes since 2015
+ramsey_pin_change_t <- ramsey_pin_change %>%
+  as_tibble() %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL, GEOID10) %>%
+  rename(TRACT = GEOID10) %>%
+  mutate(EMV_BLDG = as.numeric(EMV_BLDG),
+         EMV_TOTAL = as.numeric(EMV_TOTAL))
+
+hennepin_pin_change_t <- hennepin_pin_change %>%
+  as_tibble() %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL, GEOID10) %>%
+  rename(TRACT = GEOID10) %>%
+  mutate(EMV_BLDG = as.numeric(EMV_BLDG),
+         EMV_TOTAL = as.numeric(EMV_TOTAL))
+
+acdsw_pin_change_t <- acdsw_pin_change %>%
+  as_tibble() %>%
+  select(PIN, EMV_BLDG, EMV_TOTAL, GEOID10) %>%
+  rename(TRACT = GEOID10) %>%
+  mutate(EMV_BLDG = as.numeric(EMV_BLDG),
+         EMV_TOTAL = as.numeric(EMV_TOTAL))
+
+
+# Combine all EMV 2017 datasets
+metro_emv <- bind_rows(metro1617emv2017, metroPriorTo2016emv2017, ramsey_pin_change_t, hennepin_pin_change_t, acdsw_pin_change_t)
+
+
+# Remove duplications and missing/inaccurate data
+metro_emv_unique <- metro_emv %>%
+  unique() %>%
+  mutate(Exclude = ifelse(PIN == "053-1811722410041" & TRACT == "27053027400", 1,
+                          ifelse(PIN == "053-3411823340011" & TRACT == "27053027201", 1,
+                                 ifelse(EMV_BLDG < 10000 & EMV_TOTAL < 30000, 1, 0)))) %>% # PIN attributed to two tracts - not sure why; eliminate low values for building EMV (methodology is from 2015 iteration of SNC)
+  filter(Exclude == 0 & EMV_BLDG != 0) %>%
+  select(-Exclude)
+
+fwrite(metro_emv_unique, "Processed EMV 2017 Parcel Data/EMV 2017 Raw Parcel Data for 7 Counties.csv")
+
+```
+
+# Run lines below to check for duplicates, and ascertain why they occurred
+
+```{r}
+metro_dups_arr <- metro_emv_unique %>%
+  group_by(PIN) %>%
+  count() %>%
+  arrange(desc(n))
+
+metro_dups_count <- metro_emv_unique %>%
+  group_by(PIN) %>%
+  count() %>%
+  filter(n > 1)
+
+metro_dups <- inner_join(metro_emv_unique, metro_dups_count, by = "PIN")
+```
+
+# *Step 5:  Get median 2017 EMVs by tract*
+
+```{r}
+# Find median for each tract
+metro_emv_tot_med <- metro_emv_unique %>%
+  group_by(TRACT) %>%
+  mutate(TRACT_MEDIAN = median(EMV_TOTAL)) %>%
+  select(TRACT, TRACT_MEDIAN) %>%
+  unique() %>%
+  rename(Tract = TRACT,
+         Median_EMV_2017 = TRACT_MEDIAN) %>%
+  ungroup()
+
+```
+
+# Compare 2017 medians to 2015 medians
+
+```{r}
+emv2015 <- fread("EMV 2015 Parcel Work/MedianTract_2015.csv")
+
+emv2015t <- emv2015 %>%
+  mutate(Trac = as.character(Trac)) %>%
+  rename(Median_EMV_2015 = MedianEMVtot) %>%
+  mutate(Median_EMV_2015_adj = Median_EMV_2015*1.11) # Case-Shiller index of 1.11 from 2015 to 2017 (adjusts for inflation)
+
+emv2015_2017<- full_join(emv2015t, metro_emv_tot_med, by = c("Trac" = "Tract"))
+
+emv_comparison <- emv2015_2017 %>%
+  mutate(EMV_Difference = (Median_EMV_2017-Median_EMV_2015_adj)/Median_EMV_2015_adj*100) %>%
+  arrange(desc(EMV_Difference)) %>%
+  filter(!is.na(Trac)) %>%
+  rename(Tract = Trac)
+
+fwrite(emv_comparison, "Processed EMV 2017 Parcel Data/2015 to 2017 EMV Comparison.csv")
+```

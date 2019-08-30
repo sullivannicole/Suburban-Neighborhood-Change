@@ -1,0 +1,51 @@
+---
+title: "2015 to 2017 Median EMV Comparison"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r, include = FALSE}
+library(sf)
+library(leaflet)
+library(tidyverse)
+library(data.table)
+library(RColorBrewer)
+library(sp)
+```
+
+```{r}
+tracts <- st_read("Census2010TigerTract.shp")
+emv <- fread("Processed EMV 2017 Parcel Data/2015 to 2017 EMV Comparison.csv")
+
+emv_t <- emv %>%
+  mutate(Tract = as.factor(Tract))
+
+emv_sp <- full_join(tracts, emv_t, by = c("GEOID10" = "Tract"))
+
+emv_snc <- emv_sp %>%
+  filter(!is.na(EMV_Difference))
+
+emv_to_map <- as_Spatial(emv_snc)
+
+emv_map <- spTransform(emv_to_map, CRS("+init=epsg:4267"))
+
+emv_map@data$emv_map_var = paste0('<strong>Percent Difference in 2017 Estimated Market Value from 2015 EMV: </strong>', prettyNum(emv_map@data$EMV_Difference),'<br>','<strong>Tract: </strong>', emv_map@data$Tract, '<strong> 2017 EMV: </strong>', prettyNum(emv_map@data$Median_EMV_2017),'<br>', '<strong>2015 EMV: </strong>', prettyNum(emv_map@data$Median_EMV_2015),'<br>')
+
+pal <- colorBin("viridis", domain = emv_map@data$EMV_Difference, bins = 10)
+
+leaflet(emv_map) %>%
+  addPolygons(popup = ~emv_map_var,
+             opacity = 1,
+             fillOpacity = 0.8,
+             fillColor = ~pal(EMV_Difference),
+             smoothFactor = 0.2,
+             stroke = F,
+             highlightOptions = highlightOptions(color = "white", weight = 0.5, bringToFront = TRUE)) %>%
+  addProviderTiles(providers$CartoDB.Positron)
+
+```
+```
