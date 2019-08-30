@@ -207,9 +207,17 @@ clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, 
 rf_data <- clusters %>%
   unite(Predictor, Variable, Year) %>%
   spread(Predictor, value = Value) %>%
-  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_NATIVE_2000, -PC_NATIVE_2010, -PC_NATIVE_2017, -PC_HAWAIIANPCFIS_2000, -PC_HAWAIIANPCFIS_2010, -PC_HAWAIIANPCFIS_2017, -Tract)
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017) %>%
+  mutate(clusters = as.factor(clusters))
 
-rf <- randomForest(as.factor(clusters) ~., data = rf_data)
+rf_data %>%
+  filter(is.na(EMV_2017))
+
+```
+
+```{r}
+
+rf <- randomForest(clusters ~., data = rf_data)
 
 #############
 
@@ -251,7 +259,7 @@ all_dependencies <- map(c(1:length(predictors)), partial_dependency)
 pdp_df <- bind_rows(all_dependencies)
 
 
-# fwrite(pdp_df, "Results/Longitudinal Clustering/Partial Dependency Values from randomForest packages.csv")
+fwrite(pdp_df, "Results/Longitudinal Clustering/Partial Dependency Values from randomForest packages.csv")
 ```
 
 ```{r}
