@@ -213,6 +213,8 @@ rf_data <- clusters %>%
 rf_data %>%
   filter(is.na(EMV_2017))
 
+names(rf_data)
+
 ```
 
 ```{r}
