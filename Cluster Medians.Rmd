@@ -16,9 +16,10 @@ cluster_meds <- read_csv("Results/Longitudinal Clustering/Cluster Medians.csv")
 
 cluster_medians <- clusters %>%
   group_by(clusters, Variable, Year) %>%
-  summarize(Median = round(median(Value), 2),
-            Range = paste0(round(min(Value)), " - ", round(max(Value)))) %>%
-  unique()
+  summarize(Median = round(median(Value, na.rm = T), 2),
+            Range = paste0(prettyNum(round(min(Value, na.rm = T)), big.mark = ","), " - ", prettyNum(round(max(Value, na.rm = T)), big.mark = ","))) %>%
+  unique() %>%
+  mutate(Year = as.character(Year))
 
 write_csv(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians.csv")
 ```
