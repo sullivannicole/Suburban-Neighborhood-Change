@@ -49,7 +49,7 @@ levels(as.factor(parcels_11$YEAR_BUILT))
 levels(as.factor(parcels_11$USE1_DESC))
 
 # Look at unique land use descriptions from Dennis' 2015 dataset
-emv_15 <- fread("EMV 2015 Parcel Work/Final_Res_ParcelPts_2015.txt")
+emv_15 <- fread("Data/Parcel/EMV 2015 Parcel Work/Final_Res_ParcelPts_2015.txt")
 
 luc <- emv_15 %>% 
   dplyr::select(USE1_DESC) %>%
@@ -83,7 +83,7 @@ ramsey <- data.table(parcels_11)[COUNTY_ID == "123"][HOMESTEAD == "Y"][, ..cols]
 
 emv_10 <- rbind(emv_10_ahr, emv_10_cdsw, ramsey)
 
-# fwrite(emv_10, "EMV 2010 Parcel Data/2010_SFD_PINs.csv")
+# fwrite(emv_10, "Data/Parcel/EMV 2010 Parcel Data/2010_SFD_PINs.csv")
 ```
 
 # Import parcel data as txt files with tract attribute; select only homesteaded SFD PINs
@@ -128,7 +128,10 @@ median_emv <- parcels_tract[, EMV_2010 := median(EMV_TOTAL),
 
 ----------------------------
 
+This procedure fails to pull parcels for a multitude of Hennepin tracts.  Use Dennis' PINs from 2015 instead, and impute missing values.
+
 # Connect to GIS SDE; pull 2018 and 2017 parcel datasets
+# Bring in Dennis' 2015 dataset for land use descriptions
 
 ```{r}
 # the simplest, goes through master - guest
@@ -137,8 +140,17 @@ odbc::dbListTables(con, catalog_name = "GISLibrary", database = "GISLibrary", db
 # odbcListObjects(con, catalog = "GISLibrary", schema = "dbo")
 
 # Get 7-county parcels from 2011
-parcels_11 <- dbGetQuery(con, "SELECT * FROM GISLibrary.dbo.Parcels2011All7Points")
-parcels_10 <- dbGetQuery(con, "SELECT * FROM GISLibrary.dbo.Parcels2010All7Points")
+hennepin_18 <- dbGetQuery(con, "SELECT * FROM GISLibrary.dbo.Parcels2018HennepinPoints")
+ramsey_18 <- dbGetQuery(con, "SELECT * FROM GISLibrary.dbo.Parcels2018RamseyPoints")
+parcels_17 <- dbGetQuery(con, "SELECT * FROM GISLibrary.dbo.Parcels2017All7Points")
+
+# Look at unique land use descriptions from Dennis' 2015 dataset
+emv_15 <- fread("Data/Parcel/EMV 2015 Parcel Work/Final_Res_ParcelPts_2015.txt")
+
+luc <- emv_15 %>% 
+  dplyr::select(USE1_DESC) %>%
+  unique() %>%
+  mutate()
 
 ```
 
@@ -153,14 +165,6 @@ levels(as.factor(parcels_11$YEAR_BUILT))
 # Look at unique land use descriptions
 levels(as.factor(parcels_11$USE1_DESC))
 
-# Look at unique land use descriptions from Dennis' 2015 dataset
-emv_15 <- fread("EMV 2015 Parcel Work/Final_Res_ParcelPts_2015.txt")
-
-luc <- emv_15 %>% 
-  dplyr::select(USE1_DESC) %>%
-  unique() %>%
-  mutate()
-
 class(emv_10$YEAR_BUILT)
 class(parcels_10$COUNTY_ID)
 levels(as.factor(parcels_11$COUNTY_ID))
@@ -172,31 +176,34 @@ emv_15 %>%
   filter(USE1_DESC == "Res 1 unit")
 ```
 
-# 2010 EMVs
+# 2017 EMVs
 
 ```{r}
-cols <- c("PIN", "EMV_TOTAL", "COUNTY_ID")
+cols <- c("PIN", "EMV_TOTAL")
 
-# EMVs for Anoka, Hennepin - according to metadata, these are the 2010 EMVs, taxes payable in 2011; use land use descriptions from Dennis' dataset; eliminate builds after 2010; keep only homesteaded (owner-occupied)
-emv_10_ahr <- data.table(parcels_11)[COUNTY_ID == "053" | COUNTY_ID == "123" | COUNTY_ID == "003"][USE1_DESC %in% luc$USE1_DESC][YEAR_BUILT < 2011][, ..cols]
+# EMVs for Anoka, Carver, Dakota, Scott and Washington - according to metadata, these are the 2017 EMVs; keep only homesteaded (owner-occupied); use land use descriptions from Dennis' dataset; eliminate builds after 2018
+emv_17_adsw <- data.table(parcels_17)[COUNTY_ID == "003" | COUNTY_ID == "037" | COUNTY_ID == "139" | COUNTY_ID == "163"][HOMESTEAD == "Y"][USE1_DESC %in% luc$USE1_DESC][YEAR_BUILT < 2018][, ..cols]
 
-# EMVs for Carver, Dakota, Scott and Washington - according to metadata, these are the 2010 EMVs (except Scott - 2009 EMV, taxes payable 2010)
-emv_10_cdsw <- data.table(parcels_10)[COUNTY_ID == "019" | COUNTY_ID == "037" | COUNTY_ID == "139" | COUNTY_ID == "163"][USE1_DESC %in% luc$USE1_DESC][YEAR_BUILT < 2011][, ..cols] # Carver didn't fill in the Homestead status column in 2010
+carver_17 <- data.table(parcels_17)[COUNTY_ID == "019"][USE1_DESC %in% luc$USE1_DESC][YEAR_BUILT < 2018][, ..cols]
 
-# EMVs for Ramsey (Ramsey's land use descriptions changed between 2010 and 2015)
-ramsey <- data.table(parcels_11)[COUNTY_ID == "123"][HOMESTEAD == "Y"][, ..cols]
+# EMVs for Ramsey
+ramsey_17 <- data.table(ramsey_18)[HOMESTEAD == "Yes"][USECLASS1 %in% luc$USE1_DESC][YEAR_BUILT < 2018][, ..cols]
 
-emv_10 <- rbind(emv_10_ahr, emv_10_cdsw, ramsey)
+# EMVs for Hennepin
+hennepin_17 <- data.table(hennepin_18)[HOMESTEAD == "Yes"][USECLASS1 %in% luc$USE1_DESC][YEAR_BUILT < 2018][, ..cols]
 
-# fwrite(emv_10, "EMV 2010 Parcel Data/2010_SFD_PINs.csv")
+emv_17 <- rbind(emv_17_adsw, carver_17, ramsey_17, hennepin_17)
+
+# fwrite(emv_17, "Data/Parcel/EMV 2017 Parcel Data/2017_SFD_PINs.csv")
+
 ```
 
 # Import parcel data as txt files with tract attribute; select only homesteaded SFD PINs
 
 ```{r}
 # Import parcel data with tract attribute
-setwd("EMV 2010 Parcel Data")
-csv_files <- list.files(pattern = "*.txt")
+setwd("Data/Parcel/EMV 2017 Parcel Data/Parcels with Tracts")
+csv_files <- list.files(pattern = "*.csv")
 
 parcels <- lapply(csv_files, function(file){
   
@@ -207,43 +214,40 @@ parcels <- lapply(csv_files, function(file){
 parcels_dt <- do.call("rbind", parcels)
 ```
 
-# Aggregate to 2010 medians
+# Aggregate to 2017 medians
 
 ```{r}
 # Import 2010 SFD PINs
-# emv_10 <- fread("EMV 2010 Parcel Data/2010_SFD_PINs.csv")
+# emv_17 <- fread("Data/EMV 2017 Parcel Data/2017_SFD_PINs.csv")
 
-parcels_tract <- left_join(pins_2010, parcels_dt, by = "PIN")
+parcels_tract <- left_join(emv_17, parcels_dt, by = "PIN")
 
-# Left join on pins_2010 (in brackets)
+# Left join on pins_2017 (in brackets)
 setkey(parcels_dt, "PIN")
-setkey(emv_10, "PIN")
+setkey(emv_17, "PIN")
 
-parcels_tract <- parcels_dt[emv_10]
+parcels_tract <- parcels_dt[emv_17]
 
-median_emv <- parcels_tract[, EMV_2010 := median(EMV_TOTAL),
-                            by = GEOID10][, GEOID10, EMV_2010] %>% unique()
+median_emv <- parcels_tract[, EMV_2017 := median(EMV_TOTAL),
+                            by = GEOID10][, GEOID10, EMV_2017] %>% unique()
 
-# fwrite(median_emv, "EMV 2010 Parcel Data/Median 2010 EMV by Tract.csv")
+fwrite(median_emv, "Data/Parcel/EMV 2017 Parcel Data/Median 2017 EMV by Tract.csv")
 ```
 
 # Collect 2000, 2010, and 2017 medians together (inflation-adjusted in *Longitudinal Clustering.Rmd*)
 
 ```{r}
-emv_10 <- fread("Median 2010 EMV by Tract.csv")
-emv_17 <- fread("N:\\CommDev\\Research\\Research\\Suburban-Neighborhood-Change\\Project\\Data\\EMV 2010 Parcel Data/parcel_emv_2017.csv")
-emv_00 <- fread("N:\\CommDev\\Research\\Research\\Suburban-Neighborhood-Change\\Project\\Data\\EMV 2010 Parcel Data/cleaned_variables2000.csv")
+emv_10 <- fread("Data/Parcel/EMV 2010 Parcel Data/Median 2010 EMV by Tract.csv")
+emv_17 <- fread("Data/Parcel/EMV 2017 Parcel Data/Median 2017 EMV by Tracts.csv")
+emv_00 <- fread("Data/cleaned_variables2000.csv")
 
 emv_00_tidy <- emv_00 %>%
   select(MedianValue2000, TRACT) %>%
   rename(Tract = TRACT,
          EMV_2000 = MedianValue2000)
 
-emv_17_tidy <- emv_17 %>%
-  rename(EMV_2017 = Median_EMV_2017)
-
 emv_00_10 <- left_join(emv_00_tidy, emv_10, by = c("Tract" = "GEOID10"))
-emv_00_17 <- left_join(emv_00_10, emv_17_tidy, by = "Tract")
+emv_00_17 <- left_join(emv_00_10, emv_17, by = "Tract")
 
 # fwrite(emv_00_17, "N:\\CommDev\\Research\\Research\\Suburban-Neighborhood-Change\\Project\\Data\\Tract-level\\emv_00_10_17.csv")
 ```
