@@ -1,0 +1,24 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(data.table)
+library(openxlsx)
+library(tidyverse)
+```
+
+```{r}
+clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+cluster_meds <- read_csv("Results/Longitudinal Clustering/Cluster Medians.csv")
+
+cluster_medians <- clusters %>%
+  group_by(clusters, Variable, Year) %>%
+  summarize(Median = round(median(Value), 2),
+            Range = paste0(round(min(Value)), " - ", round(max(Value)))) %>%
+  unique()
+
+write_csv(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians.csv")
+```
