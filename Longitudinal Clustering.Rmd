@@ -185,7 +185,6 @@ sa10 <- sa %>%
 acs_all <- fread("Data/Tract-level/acs20175_all.csv")
 
 # New builds
-
 new_builds <- acs_all %>%
   dplyr::select(B25034e1, B25034e2, B25034e3, B25034e4, B25034e5, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
   filter(SUMLEV == 140 & TCFLAG == 1) %>% # Summary level of geography = tract & contained within Twin Cities
