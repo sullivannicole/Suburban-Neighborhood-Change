@@ -1,0 +1,162 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(data.table)
+library(openxlsx)
+library(tidyverse)
+```
+
+```{r}
+clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+
+# cluster_meds <- read_csv("Results/Longitudinal Clustering/Cluster Medians.csv")
+
+cluster_medians <- clusters %>%
+  group_by(clusters, Variable, Year) %>%
+  summarize(Median = round(median(Value, na.rm = T), 2),
+            Range = paste0(prettyNum(round(min(Value, na.rm = T)), big.mark = ","), " - ", prettyNum(round(max(Value, na.rm = T)), big.mark = ","))) %>%
+  unique() %>%
+  mutate(Year = as.character(Year))
+
+# write_csv(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians.csv")
+```
+
+```{r}
+regional_medians <- clusters %>%
+  group_by(Variable, Year) %>%
+  summarize(Regional_Median = round(median(Value, na.rm = T), 2),
+            Regional_Average = round(mean(Value, na.rm = T), 2)) %>%
+  unique() %>%
+  mutate(Year = as.character(Year))
+
+# write_csv(regional_medians, "Results/Longitudinal Clustering/Regional Medians.csv")
+
+```
+
+```{r}
+acs_all <- fread("Data/Tract-level/acs20175_all.csv")
+
+# New builds
+acs_medians <- acs_all %>%
+  dplyr::select(B02001e2, B02001e1, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
+  filter(SUMLEV == 310 & GEOID2 == 33460) # Summary level of metro & contained within Twin Cities
+
+acs_medians <- acs_all %>%
+  dplyr::select(SUMLEV,
+                GEOID2,
+                B02001e2,
+                B02001e1,
+                B15003e23,
+                B15003e24,
+                B15003e25,
+                B15003e1,
+                B01001e1,
+                B01001e3,
+                B01001e4,
+                B01001e5,
+                B01001e6,
+                B01001e20,
+                B01001e21,
+                B01001e22,
+                B01001e23,
+                B01001e24,
+                B01001e25,
+                B01001e26,
+                B01001e27,
+                B01001e28,
+                B01001e29,
+                B01001e30,
+                B01001e44,
+                B01001e45,
+                B01001e46,
+                B01001e47,
+                B01001e48,
+                B01001e49,
+                B15003e22,
+                B15003e1,
+                B25064e1) %>%
+  filter(SUMLEV == 313) %>% # By MN counties
+  filter(GEOID2 == 3346027003 |
+           GEOID2 == 3346027019 |
+           GEOID2 == 3346027037 |
+           GEOID2 == 3346027053 |
+           GEOID2 == 3346027123 |
+           GEOID2 == 3346027139 |
+           GEOID2 == 3346027163) %>% # Select 7 counties
+  dplyr::select(-GEOID2, -SUMLEV) %>%
+  gather(everything(), key = "Census_category", value = "Value") %>%
+  group_by(Census_category) %>%
+  summarize(SUM = sum(Value)) %>%
+  spread(Census_category, value = SUM) %>%
+  transmute(PC_WHITE = B02001e2/B02001e1*100,
+         PC_GRADPROF = (B15003e23 + B15003e24 + B15003e25)/B15003e1*100,
+         PC_18_UNDER = (B01001e3 + B01001e4 + B01001e5 + B01001e6 + B01001e27 + B01001e28 + B01001e29 + B01001e30)/B01001e1*100,
+         PC_65_UP = (B01001e20 + B01001e21 + B01001e22 + B01001e23 + B01001e24 + B01001e25 + B01001e26 + B01001e27 + B01001e28 + B01001e44 + B01001e45 + B01001e46 + B01001e47 + B01001e48 + B01001e49)/B01001e1*100,
+         PC_BACHELORS = B15003e22/B15003e1*100)
+
+```
+
+```{r}
+## Import 3-timepoint data
+
+# Import data - enriched ACS created by Matt and copied to this folder from CommDev/Research/Research/Census Data/ACS/Excel Data
+setwd("Data/Tract-level")
+acs <- list.files(pattern = "acs2.*.xlsx")
+
+list2env(purrr::map(setNames(acs, make.names(gsub("*5_tr.xlsx$", "", acs))), 
+         read.xlsx), envir = .GlobalEnv)
+
+# Select variables
+
+acs_agg <- function(df) {
+  
+year <- df$YEAR %>% unique()
+
+acs <<- df %>%
+  dplyr::select(GEOID2, TCFLAG, AVGHHSIZE, WHITENH, POPTOTAL, AGEUNDER18, AGE65UP, BACHELORS, GRADPROF, POPOVER25, HH_NOVEH, HHTOTAL, LEP, HHMOBILE, OWNEROCC, RENTEROCC, ASIANNH, BLACKNH, HISPPOP, AMINDNH, PACIFICNH, OTHERNH, MULTRACENH, POV185RATE, MEDGRENT, MEDHOMEVAL, MEDIANHHI) %>%
+  filter(TCFLAG == 1) %>% # Select metro tracts (includes core and MUSA)
+  dplyr::select(-TCFLAG, -GEOID2, -MEDGRENT, -MEDHOMEVAL, -MEDIANHHI) %>%
+  gather(everything(), key = "Category", value = "Value") %>%
+  group_by(Category) %>%
+  summarize(SUM = sum(Value, na.rm = T)) %>%
+  spread(Category, value = SUM) %>%
+  mutate(PC_POC = (POPTOTAL-WHITENH)/POPTOTAL*100,
+         PC_18UNDER = AGEUNDER18/POPTOTAL*100,
+         PC_65UP = AGE65UP/POPTOTAL*100,
+         PC_BACHELORS = BACHELORS/POPOVER25*100,
+         PC_GRADPROF = GRADPROF/POPOVER25*100,
+         RENT_TENURE = RENTEROCC/(RENTEROCC + OWNEROCC)*100,
+         PC_LEP = LEP/POPTOTAL*100,
+         PC_HH_MOBILE = HHMOBILE/HHTOTAL*100,
+         PC_HH_NOVEH = HH_NOVEH/HHTOTAL*100,
+         PC_BLACK = BLACKNH/POPTOTAL*100,
+         PC_ASIAN = ASIANNH/POPTOTAL*100,
+         PC_NATIVE = AMINDNH/POPTOTAL*100,
+         PC_TWORACE = MULTRACENH/POPTOTAL*100,
+         PC_HAWAIIANPCFIS = PACIFICNH/POPTOTAL*100,
+         PC_OTHERRACE = MULTRACENH/POPTOTAL*100,
+         PC_WHITE = WHITENH/POPTOTAL*100,
+         PC_HISPPOP = HISPPOP/POPTOTAL*100,
+         PC_POV185 = POV185RATE/POPTOTAL*100) %>%
+  dplyr::select(PC_POC, PC_18UNDER, PC_65UP, PC_BACHELORS, RENT_TENURE, PC_LEP, PC_HH_MOBILE, PC_HH_NOVEH, PC_GRADPROF, PC_BLACK, PC_ASIAN, PC_NATIVE, PC_TWORACE, PC_WHITE, PC_HISPPOP, PC_HAWAIIANPCFIS, PC_OTHERRACE, PC_POV185) %>%
+  gather(everything(), key = "Variable", value = "Value") %>%
+  mutate(Year = year)
+
+assign(paste("acs_agg", year, sep = "_"), acs, envir = .GlobalEnv)
+
+}
+
+df_list <- list(acs2010, acs2017)
+
+# Run cleaning function over ACS files
+map(df_list, acs_agg)
+
+acs_agg_10_17 <- bind_rows(acs_agg_2010, acs_agg_2017)
+```
+
+
+
+```
