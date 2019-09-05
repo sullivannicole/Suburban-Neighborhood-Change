@@ -36,6 +36,8 @@ regional_medians <- clusters %>%
 
 ```
 
+# Region-wide (all 7-counties, including non-MUSA) totals - not used
+
 ```{r}
 acs_all <- fread("Data/Tract-level/acs20175_all.csv")
 
@@ -98,6 +100,8 @@ acs_medians <- acs_all %>%
          PC_BACHELORS = B15003e22/B15003e1*100)
 
 ```
+
+# Aggregate 2010 and 2017 tract-level data to study-area totals for percentages (don't include medians)
 
 ```{r}
 ## Import 3-timepoint data
