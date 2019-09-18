@@ -57,4 +57,8 @@ builds_decade <- acs_17 %>%
 
 fwrite(builds_decade, "Data/Tract-level/builds_by_decade.csv")
 
+library(openxlsx)
+
+write.xlsx(builds_decade, "Data/Tract-level/builds_by_decade.xlsx")
+
 ```
