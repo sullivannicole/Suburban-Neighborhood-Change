@@ -53,7 +53,9 @@ builds_decade <- acs_17 %>%
          HU_1950_1959 = B25034e9,
          HU_1940_1949 = B25034e10,
          HU_1939_earlier = B25034e11,
-         Tract = GEOID2)
+         Tract = GEOID2) %>%
+  gather(Total_HU_2017:HU_1939_earlier, key = "Time_period", value = "Housing_Units") %>%
+  mutate(Time_period = str_replace(Time_period, "HU_", ""))
 
 fwrite(builds_decade, "Data/Tract-level/builds_by_decade.csv")
 
