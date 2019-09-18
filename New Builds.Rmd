@@ -13,7 +13,7 @@ library(tidyverse)
 
 ```{r}
 #gunzip('Data/acs20175_all.csv.gz', remove = F) # Unzip compressed gz file, don't remove compressed file
-housing_17 <- fread("Data/acs20175_all.csv")
+housing_17 <- fread("Data/Block group-level/acs20175_all.csv")
 
 # New builds
 
@@ -30,5 +30,31 @@ new_builds <- housing_17 %>%
    select(GEOID, GEOID2, GEONAME, PC_NEW_HU_2000, PC_NEW_HU_2010, PC_NEW_HU_2017)
 
 fwrite(new_builds, "Data/percent_new_builds_bg.csv")
+
+```
+
+# Builds by decade for tracts
+
+```{r}
+#gunzip('Data/acs20175_all.csv.gz', remove = F) # Unzip compressed gz file, don't remove compressed file
+acs_17 <- fread("Data/Tract-level/acs20175_all.csv")
+
+# Builds by decade
+builds_decade <- acs_17 %>%
+  select(B25034e1, B25034e2, B25034e3, B25034e4, B25034e5, B25034e6, B25034e7, B25034e8, B25034e9, B25034e10, B25034e11, SUMLEV, TCFLAG, GEOID, GEOID2, GEONAME) %>%
+  filter(SUMLEV == 140 & TCFLAG == 1) %>%
+  transmute(Total_HU_2017 = B25034e1, # Total housing units in existence in 2017
+         HU_2010_2017 = B25034e3 + B25034e2,  # Units built 2010 to 2013, units built 2014 or later
+         HU_2000_2009 = B25034e4,
+         HU_1990_1999 = B25034e5,
+         HU_1980_1989 = B25034e6,
+         HU_1970_1979 = B25034e7,
+         HU_1960_1969 = B25034e8,
+         HU_1950_1959 = B25034e9,
+         HU_1940_1949 = B25034e10,
+         HU_1939_earlier = B25034e11,
+         Tract = GEOID2)
+
+fwrite(builds_decade, "Data/Tract-level/builds_by_decade.csv")
 
 ```
