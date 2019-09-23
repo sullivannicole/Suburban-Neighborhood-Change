@@ -201,13 +201,13 @@ all_dependencies <- do.call("rbind", pdp_df)
 caret's partial plots are giving same prediction for every predictor.  Try using the randomForest's partialPlot() function (this works, but doesn't return probabilities).
 
 ```{r}
-clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
+clusters <- read_csv("Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
 
 # Data to create folds & to run model on
 rf_data <- clusters %>%
   unite(Predictor, Variable, Year) %>%
   spread(Predictor, value = Value) %>%
-  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017) %>%
+  dplyr::select(-PC_WHITE_2000, -PC_WHITE_2010, -PC_WHITE_2017, -PC_HH_MOBILE_2000, -PC_HH_MOBILE_2010, -PC_HH_MOBILE_2017) %>%
   mutate(clusters = as.factor(clusters))
 
 rf_data %>%
@@ -261,7 +261,7 @@ all_dependencies <- map(c(1:length(predictors)), partial_dependency)
 pdp_df <- bind_rows(all_dependencies)
 
 
-fwrite(pdp_df, "Results/Longitudinal Clustering/Partial Dependency Values from randomForest packages.csv")
+fwrite(pdp_df, "Results/Longitudinal Clustering/Partial Dependency Values for -hh_mobile from randomForest packages.csv")
 ```
 
 ```{r}

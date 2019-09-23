@@ -319,6 +319,7 @@ cluster_full <- fread("Data/3-Timepoint RF-Imputed Parcel EMV Dataset.csv")
 cluster_data <- cluster_full %>%
   mutate(Tract = as.factor(Tract)) %>%
   as.data.frame() %>%
+  dplyr::select(-PC_HH_MOBILE_2000, -PC_HH_MOBILE_2010, -PC_HH_MOBILE_2017) %>% # Remove hh mobile (no interaction)
   dplyr::select(Tract, everything())
 
 # Get order for clustering
@@ -382,10 +383,10 @@ cluster_3_snc <- cluster_full %>%
   separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
   dplyr::select(-underscore)
 
-# fwrite(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted.csv")
+fwrite(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
 ```
 
-## Reverse-Engineering Clusters:  Decision Tree + Random Forest Model
+## Reverse-Engineering Clusters:  Decision Trees
 
 ```{r}
 
