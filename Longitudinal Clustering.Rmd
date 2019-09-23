@@ -367,12 +367,12 @@ names(time_in_data) <- assign$Variable
 cld_snc_3 <- cld3d(cluster_data, timeInData = time_in_data)
 
 set.seed(410)
-kml3d(cld_snc_3, nbClusters = 8) # Any number of clusters exceeding 6 must be specified using nbClusters
+kml3d(cld_snc_3, nbClusters = 7) # Any number of clusters exceeding 6 must be specified using nbClusters
 #choice(cld_snc)
 
 # Take a look at 8 clusters
 set.seed(410)
-cluster_full$clusters <- getClusters(cld_snc_3, 8)
+cluster_full$clusters <- getClusters(cld_snc_3, 7)
 
 cluster_3_snc <- cluster_full %>%
   filter(!is.na(clusters)) %>%
@@ -383,7 +383,7 @@ cluster_3_snc <- cluster_full %>%
   separate(Variable, into = c("Variable", "underscore"), sep = -1) %>%
   dplyr::select(-underscore)
 
-fwrite(cluster_3_snc, "Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
+fwrite(cluster_3_snc, "Results/Longitudinal Clustering/7-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
 ```
 
 ## Reverse-Engineering Clusters:  Decision Trees
