@@ -12,7 +12,7 @@ library(tidyverse)
 ```{r}
 # clusters <- read.xlsx("Results/Longitudinal Clustering/8-Clusters 3-Timepoints, Random Forest Imputation, non-MUSA, Races sans Full Disagg.xlsx")
 
-clusters <- read_csv("Results/Longitudinal Clustering/8-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
+clusters <- read_csv("Results/Longitudinal Clustering/7-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
 
 # cluster_meds <- read_csv("Results/Longitudinal Clustering/Cluster Medians.csv")
 
@@ -24,7 +24,7 @@ cluster_medians <- clusters %>%
   mutate(Year = as.character(Year))
 
 # write_csv(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians no hh.csv")
-# write.xlsx(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians no hh.xlsx")
+write.xlsx(cluster_medians, "Results/Longitudinal Clustering/Cluster Medians no hh.xlsx")
 ```
 
 ```{r}
@@ -36,7 +36,7 @@ regional_medians <- clusters %>%
   mutate(Year = as.character(Year))
 
 # write_csv(regional_medians, "Results/Longitudinal Clustering/Regional Medians no hh.csv")
-# write.xlsx(regional_medians, "Results/Longitudinal Clustering/Regional Medians no hh.xlsx")
+write.xlsx(regional_medians, "Results/Longitudinal Clustering/Regional Medians no hh.xlsx")
 
 ```
 
