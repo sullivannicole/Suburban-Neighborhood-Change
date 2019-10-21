@@ -1,0 +1,28 @@
+---
+title: "Connecting Tract Shapefile to Cluster Assignments"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(sf)
+
+tracts <- st_read("Data/Census2010TigerTract.shp")
+clusters <- read_csv("Results/Longitudinal Clustering/7-Clusters 3-Timepoints Inflation-Adjusted no hh_mobile.csv")
+
+clusters_only <- clusters %>%
+  select(Tract, clusters) %>%
+  unique() %>%
+  mutate(Tract = as.factor(Tract))
+
+all_tracts_clusters <- left_join(tracts, clusters_only, by = c("GEOID10" = "Tract"))
+
+study_tracts <- all_tracts_clusters %>%
+  filter(!is.na(clusters))
+
+st_write(study_tracts, "Results/Longitudinal Clustering/Clusters_Tracts.shp")
+```
